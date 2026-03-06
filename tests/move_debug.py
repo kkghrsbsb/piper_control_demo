@@ -1,16 +1,14 @@
 # 运动调试
 import time
-
 from piper_control import (
-    piper_connect,
     piper_control,
     piper_init,
     piper_interface,
 )
-from src.piper_control_demo.config import connect_can, probe_arm_enabled_state
+from piper_control_demo.config import connect_can, probe_arm_enabled_state
 
-
-if __name__ == "__main__":
+def main():
+    # 连接机械臂并失能/重置机械臂
     ports = connect_can()
 
     input("WARNING: the robot will move. Press Enter to continue...")
@@ -66,11 +64,7 @@ if __name__ == "__main__":
             robot.set_arm_mode(speed=5)
             safe_position = [0.0, 0.0, 0.0, 0.02, 0.5, 0.0]
             print(f"moving to safe position before disable: {safe_position}")
-            reached_safe_position = controller.move_to_position(
-                safe_position,
-                threshold=0.01,
-                timeout=8.0,
-            )
+            reached_safe_position = controller.move_to_position(safe_position, threshold=0.01, timeout=8.0)
             print(f"reached safe position: {reached_safe_position}")
 
         if reached_safe_position:
@@ -81,3 +75,7 @@ if __name__ == "__main__":
             print(f"current joints: {robot.get_joint_positions()}")
     else:
         print("skip disabling arm.")
+
+
+if __name__ == "__main__":
+    main()

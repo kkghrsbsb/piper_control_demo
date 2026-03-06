@@ -6,3 +6,9 @@ __pycache__/
 # uv / ide
 .venv/
 .idea/
+
+# Distribution / packaging
+.Python
+*.egg-info/
+dist/
+build/
