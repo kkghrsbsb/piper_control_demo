@@ -64,6 +64,12 @@ uv run python scripts/disable_safe.py
 # 轨迹录制 / 回放实验
 uv run python scripts/record_trajectories.py --robots can0
 
+# 启动 PyBullet 滑条发送端
+uv run python tests/pybullet_socket_stream_sender.py
+
+# 启动真实机械臂实时跟随接收端
+uv run python tests/socket_joint_realtime_follow.py
+
 # 本地预览 mdBook 文档
 mdbook serve docs
 ```
@@ -71,6 +77,7 @@ mdbook serve docs
 ## 重要说明
 
 - 这个仓库连接真实机械臂，`scripts/` 下有多份会直接操作硬件的调试脚本。
+- `tests/` 下也有少量需要人工触发的专项硬件测试，例如 socket 关节流跟随和 PyBullet 实时映射测试。
 - 任何会让机械臂上电、使能、复位、驱动夹爪或发生实际运动的操作，都属于高风险动作。
 - AI 可以协助读代码、写代码、改文档、整理命令和分析流程，但不能代替人工去执行激活机械臂并进行运动控制的尝试。
 - 涉及风险边界、项目结构和脚本用途的更完整说明，以 [`docs/src/README.md`](/home/xinger/MyWork/piper_control_demo/docs/src/README.md) 为准。

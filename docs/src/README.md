@@ -82,6 +82,10 @@
 
 - [`socket_joint_stream_test.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_stream_test.py)
   参考 `move_debug.py` 的初始化流程，在机械臂运动到零位后启动本机模拟 socket 发送，并按 200Hz 关节角流驱动机械臂从零位跟随到目标位姿。
+- [`pybullet_socket_stream_sender.py`](/home/xinger/MyWork/piper_control_demo/tests/pybullet_socket_stream_sender.py)
+  启动 PyBullet 滑条仿真，并把前 6 个关节的当前目标值以 200Hz socket JSON 行流持续发送出去。
+- [`socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
+  在真实机械臂回零后等待发送端前几帧回到零位，确认后进入实时跟随；控制保持按流实时下发，当前关节角输出采用降采样打印，并支持按 `q` 键结束跟随后再进入失能确认。
 
 ### 实验脚本
 
@@ -105,6 +109,8 @@
 5. [`scripts/README.md`](/home/xinger/MyWork/piper_control_demo/scripts/README.md)
 6. [`scripts/record_trajectories.py`](/home/xinger/MyWork/piper_control_demo/scripts/record_trajectories.py)
 7. [`tests/socket_joint_stream_test.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_stream_test.py)
+8. [`tests/pybullet_socket_stream_sender.py`](/home/xinger/MyWork/piper_control_demo/tests/pybullet_socket_stream_sender.py)
+9. [`tests/socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
 
 这条路径基本对应了“项目定位 -> 连接流程 -> 基础控制 -> 实验方向”的理解顺序。
 
@@ -168,6 +174,12 @@ uv run python scripts/disable_safe.py
 
 # 轨迹录制 / 回放实验
 uv run python scripts/record_trajectories.py --robots can0
+
+# 启动 PyBullet 滑条发送端
+uv run python tests/pybullet_socket_stream_sender.py
+
+# 启动真实机械臂实时跟随接收端
+uv run python tests/socket_joint_realtime_follow.py
 ```
 
 如果需要查看文档：
@@ -190,6 +202,7 @@ mdbook serve docs
 - 重力补偿采样和示教相关脚本风险更高，当前仓库已经明确提示存在碰撞风险。
 - 当前会直接操作真实硬件的调试脚本已经放在 `scripts/` 下，不应按普通自动化测试理解。
 - `tests/socket_joint_stream_test.py` 同样会真实驱动机械臂，只应用于人工在场、明确确认后的专项测试。
+- `tests/socket_joint_realtime_follow.py` 会把仿真滑条变化实时映射到真实机械臂，风险高于单次轨迹测试，必须在人工看护下运行。
 
 ## 这个文档后续应该继续补什么
 
