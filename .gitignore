@@ -14,4 +14,4 @@ dist/
 build/
 
 # mdbook
-docs/book
+docs/book/

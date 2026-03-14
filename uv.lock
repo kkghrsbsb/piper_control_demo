@@ -324,12 +324,14 @@ source = { editable = "." }
 dependencies = [
     { name = "pinocchio" },
     { name = "piper-control", extra = ["gravity"] },
+    { name = "pybullet" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "pinocchio", specifier = ">=0.4.3" },
     { name = "piper-control", extras = ["gravity"], specifier = ">=1.3.2" },
+    { name = "pybullet", specifier = "==3.0.6" },
 ]
 
 [[package]]
@@ -343,6 +345,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/b5/c4/06172af8276170ff0
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a8/0c/4473a7a9aca9c50798abec6a77e8e5e714ad968399db3d2b86162a05177c/piper_sdk-0.6.1-py3-none-any.whl", hash = "sha256:743557e1b8dfe685f2c33d728ab28c3ff510de8860d6494e54ed5d801493d65c", size = 193748, upload-time = "2025-10-30T06:38:51.368Z" },
 ]
+
+[[package]]
+name = "pybullet"
+version = "3.0.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/89/64/c859b4fc0be7566c82006a7658c7d50f8f8faecd42cd70ecf672da70406c/pybullet-3.0.6.tar.gz", hash = "sha256:db4eea782c4d4808ef73b305a729d94f89035f7ad1b84032432e9dd101f689e4", size = 89832030, upload-time = "2020-10-07T23:56:00.287Z" }
 
 [[package]]
 name = "pyopengl"

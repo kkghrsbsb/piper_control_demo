@@ -7,6 +7,10 @@ from piper_control import (
 )
 from piper_control_demo.config import connect_can, probe_arm_enabled_state
 
+
+COLLISION_PROTECTION_LEVELS = [5, 5, 5, 5, 5, 5]
+
+
 def main():
     # 连接机械臂并失能/重置机械臂
     ports = connect_can()
@@ -15,6 +19,11 @@ def main():
 
     robot = piper_interface.PiperInterface(can_port=ports[0])
     robot.set_installation_pos(piper_interface.ArmInstallationPos.UPRIGHT)
+    robot.set_collision_protection(COLLISION_PROTECTION_LEVELS)
+    print(
+        "collision protection levels:",
+        robot.get_collision_protection(),
+    )
 
     is_enabled = probe_arm_enabled_state(robot)
 

@@ -10,6 +10,7 @@
 - 本页 [`docs/src/README.md`](/home/xinger/MyWork/piper_control_demo/docs/src/README.md) 是更完整的项目入口说明，用来沉淀项目定位、结构解释、脚本用途、执行边界与安全约束。
 - 当本页内容因为项目演进而更新时，根目录 [`README.md`](/home/xinger/MyWork/piper_control_demo/README.md) 也应根据这里的变化同步更新，尤其是文件结构、基本文件作用、常用命令和安全说明。
 - 根目录 [`README.md`](/home/xinger/MyWork/piper_control_demo/README.md) 的目录树只需要展示基本架构即可，不必穷举所有文件。
+- `docs/src/` 下的 Markdown 文档只要发生新建、删除、重命名或移动，就必须同步更新 [`docs/src/SUMMARY.md`](/home/xinger/MyWork/piper_control_demo/docs/src/SUMMARY.md)，确保 mdBook 目录保持准确。
 
 ## 项目目标
 
@@ -29,6 +30,7 @@
 - Python 包源码位于 `src/piper_control_demo/`
 - 资源文件当前已经开始整理到 `assets/`
 - 主要可执行能力目前集中在 `scripts/`
+- `tests/` 当前保留少量需要人工触发的专项硬件测试
 - 部分能力已经可日常调试使用，部分能力仍然明确标注为实验性
 
 ## 依赖与环境
@@ -70,9 +72,16 @@
 - [`show_status.py`](/home/xinger/MyWork/piper_control_demo/scripts/show_status.py)
   连接机械臂后持续打印状态与关节信息，适合确认通信是否正常。
 - [`move_debug.py`](/home/xinger/MyWork/piper_control_demo/scripts/move_debug.py)
-  用于基础动作调试，包含初始化、移动到目标位姿、以及可选的安全失能流程。
+  用于基础动作调试，包含初始化、将 6 个关节的碰撞保护等级固定设为 `5`、移动到目标位姿、以及可选的安全失能流程。
 - [`disable_safe.py`](/home/xinger/MyWork/piper_control_demo/scripts/disable_safe.py)
   用于手动让机械臂失能，执行前要求机械臂已经处于安全姿态。
+
+### 专项测试
+
+[`tests`](/home/xinger/MyWork/piper_control_demo/tests) 目录当前用于放置少量需要人工确认、不会被当成普通自动化测试直接批量执行的专项硬件测试。
+
+- [`socket_joint_stream_test.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_stream_test.py)
+  参考 `move_debug.py` 的初始化流程，在机械臂运动到零位后启动本机模拟 socket 发送，并按 200Hz 关节角流驱动机械臂从零位跟随到目标位姿。
 
 ### 实验脚本
 
@@ -95,6 +104,7 @@
 4. [`scripts/move_debug.py`](/home/xinger/MyWork/piper_control_demo/scripts/move_debug.py)
 5. [`scripts/README.md`](/home/xinger/MyWork/piper_control_demo/scripts/README.md)
 6. [`scripts/record_trajectories.py`](/home/xinger/MyWork/piper_control_demo/scripts/record_trajectories.py)
+7. [`tests/socket_joint_stream_test.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_stream_test.py)
 
 这条路径基本对应了“项目定位 -> 连接流程 -> 基础控制 -> 实验方向”的理解顺序。
 
@@ -120,6 +130,7 @@
 - 检查当前是否已使能
 - 必要时执行 `reset_arm`
 - 执行 `reset_gripper`
+- 设置 6 个关节的碰撞保护等级为 `5`
 - 进入位置控制器并移动到目标点
 - 可选地回到安全位后失能
 
@@ -178,6 +189,7 @@ mdbook serve docs
 - 执行失能前，先确认机械臂处于安全姿态，因为掉电后可能下坠。
 - 重力补偿采样和示教相关脚本风险更高，当前仓库已经明确提示存在碰撞风险。
 - 当前会直接操作真实硬件的调试脚本已经放在 `scripts/` 下，不应按普通自动化测试理解。
+- `tests/socket_joint_stream_test.py` 同样会真实驱动机械臂，只应用于人工在场、明确确认后的专项测试。
 
 ## 这个文档后续应该继续补什么
 
