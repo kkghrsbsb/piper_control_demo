@@ -1,0 +1,188 @@
+# piper_control_demo
+
+`piper_control_demo` 是一个基于 `piper-control` 的 Piper 机械臂实验仓库。
+
+这个仓库当前的重点不是封装一套完整业务系统，而是把“连接机械臂、初始化、执行基础动作、观察状态、尝试重力补偿与轨迹录制”这些实际调试动作沉淀成可复用的脚本和少量辅助代码。后续阅读项目时，建议先从这里开始，再进入具体脚本与源码。
+
+## 文档职责
+
+- 根目录 [`README.md`](/home/xinger/MyWork/piper_control_demo/README.md) 负责提供仓库首页级别的快速总览、目录结构和最常用执行命令。
+- 本页 [`docs/src/README.md`](/home/xinger/MyWork/piper_control_demo/docs/src/README.md) 是更完整的项目入口说明，用来沉淀项目定位、结构解释、脚本用途、执行边界与安全约束。
+- 当本页内容因为项目演进而更新时，根目录 [`README.md`](/home/xinger/MyWork/piper_control_demo/README.md) 也应根据这里的变化同步更新，尤其是文件结构、基本文件作用、常用命令和安全说明。
+
+## 项目目标
+
+从现有文件来看，这个仓库主要服务于以下几件事：
+
+1. 验证 `piper-control` 在本地 uv 项目中的接入方式。
+2. 固化 Piper 机械臂的 CAN 连接与初始化流程。
+3. 提供几个面向真实硬件的调试脚本，便于快速检查状态和动作控制。
+4. 保留一条“重力补偿 + 示教/轨迹回放”的实验路径，作为后续探索基础。
+
+## 当前状态
+
+项目还处在很早期的实验阶段，代码量不大，但方向已经比较明确：
+
+- 包管理使用 `uv`
+- 文档使用 `mdBook`
+- Python 包源码位于 `src/piper_control_demo/`
+- 主要可执行能力目前集中在 `tests/` 与 `scripts/`
+- 部分能力已经可日常调试使用，部分能力仍然明确标注为实验性
+
+## 依赖与环境
+
+项目在 [`pyproject.toml`](/home/xinger/MyWork/piper_control_demo/pyproject.toml) 中声明了核心依赖：
+
+- Python `>=3.10`
+- `piper-control[gravity]`
+- `pinocchio`
+
+这说明项目默认面向：
+
+- 一台已经正确连接的 Piper 机械臂
+- 可用的 CAN 接口
+- 需要时可启用重力补偿相关能力
+
+## 仓库结构
+
+### 代码包
+
+源码位于 [`src/piper_control_demo`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo)。
+
+- [`config.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/config.py)
+  负责 CAN 端口发现、激活，以及机械臂使能状态探测。
+- [`core/path.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/core/path.py)
+  提供项目根目录定位，供脚本稳定访问模型等资源文件。
+- [`models/piper_grav_comp.xml`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/models/piper_grav_comp.xml)
+  是重力补偿实验使用的模型文件。
+
+### 调试脚本
+
+[`tests`](/home/xinger/MyWork/piper_control_demo/tests) 目录下当前更像“硬件调试脚本集合”，不只是单元测试。
+
+- [`show_status.py`](/home/xinger/MyWork/piper_control_demo/tests/show_status.py)
+  连接机械臂后持续打印状态与关节信息，适合确认通信是否正常。
+- [`move_debug.py`](/home/xinger/MyWork/piper_control_demo/tests/move_debug.py)
+  用于基础动作调试，包含初始化、移动到目标位姿、以及可选的安全失能流程。
+- [`disable_safe.py`](/home/xinger/MyWork/piper_control_demo/tests/disable_safe.py)
+  用于手动让机械臂失能，执行前要求机械臂已经处于安全姿态。
+
+### 实验脚本
+
+[`scripts`](/home/xinger/MyWork/piper_control_demo/scripts) 目录包含更偏“工具化”的内容。
+
+- [`piper-generate-udev-rule`](/home/xinger/MyWork/piper_control_demo/scripts/piper-generate-udev-rule)
+  用来给 CAN 设备生成持久化识别与自动配置规则，目标是减少每次手工初始化接口的负担。
+- [`record_trajectories.py`](/home/xinger/MyWork/piper_control_demo/scripts/record_trajectories.py)
+  提供交互式轨迹录制、保存、加载与回放，也支持结合重力补偿进行示教实验。
+- [`scripts/README.md`](/home/xinger/MyWork/piper_control_demo/scripts/README.md)
+  已经记录了这部分脚本的背景和风险说明。
+
+## 目前最值得先读的文件
+
+如果是第一次接手这个仓库，推荐按下面顺序阅读：
+
+1. 根目录 [`README.md`](/home/xinger/MyWork/piper_control_demo/README.md)
+2. 本页 [`docs/src/README.md`](/home/xinger/MyWork/piper_control_demo/docs/src/README.md)
+3. [`src/piper_control_demo/config.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/config.py)
+4. [`tests/move_debug.py`](/home/xinger/MyWork/piper_control_demo/tests/move_debug.py)
+5. [`scripts/README.md`](/home/xinger/MyWork/piper_control_demo/scripts/README.md)
+6. [`scripts/record_trajectories.py`](/home/xinger/MyWork/piper_control_demo/scripts/record_trajectories.py)
+
+这条路径基本对应了“项目定位 -> 连接流程 -> 基础控制 -> 实验方向”的理解顺序。
+
+## 一条实际可用的理解路径
+
+### 1. 先理解连接逻辑
+
+`connect_can()` 会：
+
+- 调用 `piper_connect.find_ports()` 查找可用端口
+- 激活端口
+- 再次读取已激活端口
+- 在没有发现端口时直接报错
+
+这意味着当前仓库默认假设“真实硬件在线”，并没有做模拟器或离线模式封装。
+
+### 2. 再理解初始化与安全动作
+
+`move_debug.py` 展示了一个比较完整的动作链路：
+
+- 查找并连接机械臂
+- 提醒操作者确认即将运动
+- 检查当前是否已使能
+- 必要时执行 `reset_arm`
+- 执行 `reset_gripper`
+- 进入位置控制器并移动到目标点
+- 可选地回到安全位后失能
+
+这也是目前最接近“项目主流程”的脚本。
+
+### 3. 最后再看重力补偿实验
+
+`record_trajectories.py` 比基础调试更进一步，支持：
+
+- 单臂或双臂
+- 轨迹录制
+- 轨迹回放
+- 夹爪开合控制
+- 保存/加载 JSON 轨迹
+- 可选的重力补偿模型加载
+
+但从 [`scripts/README.md`](/home/xinger/MyWork/piper_control_demo/scripts/README.md) 的说明来看，这部分仍然带有明显实验性质，尤其是样本采集和碰撞风险需要非常谨慎。
+
+## 建议的常用命令
+
+下面这些命令是根据仓库现状整理出的常见入口。
+
+```bash
+# 安装依赖
+uv sync
+
+# 查看机械臂状态
+uv run python tests/show_status.py
+
+# 进行基础运动调试
+uv run python tests/move_debug.py
+
+# 手动失能机械臂
+uv run python tests/disable_safe.py
+
+# 轨迹录制 / 回放实验
+uv run python scripts/record_trajectories.py --robots can0
+```
+
+如果需要查看文档：
+
+```bash
+mdbook serve docs
+```
+
+## 安全说明
+
+这个项目直接控制真实机械臂，很多脚本都不是“只读操作”。
+
+在当前仓库里，至少要默认记住下面几点：
+
+- 文档编写、代码修改和流程分析可以由 AI 协助完成，但任何会让机械臂上电、使能、复位、解除保护、执行轨迹、驱动夹爪或发生实际运动的操作，都必须由人类操作者在确认现场安全后亲自决定并执行。
+- AI 不应主动执行或代为尝试任何“激活机械臂并进行运动控制”的步骤，即使仓库里已经存在对应脚本，也只能说明用途、分析代码、补充文档或调整实现，不能把危险动作当成普通验证步骤直接运行。
+- 如果某个任务需要验证真实运动效果，边界应明确理解为“可以准备代码和命令，但不能替代人工下发到真实机械臂执行”。
+- 执行动作脚本前，先确认机械臂周围没有人和障碍物。
+- 执行失能前，先确认机械臂处于安全姿态，因为掉电后可能下坠。
+- 重力补偿采样和示教相关脚本风险更高，当前仓库已经明确提示存在碰撞风险。
+- `tests/` 目录里的脚本虽然名为 tests，但实际会连真实硬件，不应按普通自动化测试理解。
+
+## 这个文档后续应该继续补什么
+
+作为 mdBook 入口页，后续最值得继续拆分成独立章节的内容有：
+
+1. 环境准备：Python、uv、CAN、udev 规则配置。
+2. 首次连接 Piper 的完整步骤。
+3. 基础控制流程：连接、复位、位置控制、失能。
+4. 调试脚本说明：每个脚本的用途、前置条件、风险。
+5. 重力补偿实验记录：样本采集、参数、已知问题。
+6. 上游依赖说明：本项目依赖哪些 `piper-control` 能力，哪些行为继承自上游。
+
+## 一句话总结
+
+可以把这个仓库理解为：一个围绕真实 Piper 机械臂调试而建立的 `uv + mdBook` Python 实验工程，当前已经具备基础连接与运动调试能力，并保留了重力补偿和轨迹示教的探索入口。
