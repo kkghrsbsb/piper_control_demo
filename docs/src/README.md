@@ -6,10 +6,9 @@
 
 ## 文档职责
 
-- 根目录 [`README.md`](/home/xinger/MyWork/piper_control_demo/README.md) 负责提供仓库首页级别的快速总览、目录结构和最常用执行命令。
+- 根目录 [`README.md`](/home/xinger/MyWork/piper_control_demo/README.md) 负责提供仓库首页级别的快速总览和最常用执行命令。
 - 本页 [`docs/src/README.md`](/home/xinger/MyWork/piper_control_demo/docs/src/README.md) 是更完整的项目入口说明，用来沉淀项目定位、结构解释、脚本用途、执行边界与安全约束。
-- 当本页内容因为项目演进而更新时，根目录 [`README.md`](/home/xinger/MyWork/piper_control_demo/README.md) 也应根据这里的变化同步更新，尤其是文件结构、基本文件作用、常用命令和安全说明。
-- 根目录 [`README.md`](/home/xinger/MyWork/piper_control_demo/README.md) 的目录树只需要展示基本架构即可，不必穷举所有文件。
+- 当本页内容因为项目演进而更新时，根目录 [`README.md`](/home/xinger/MyWork/piper_control_demo/README.md) 也应根据这里的变化同步更新，尤其是常用命令和安全说明。
 - `docs/src/` 下的 Markdown 文档只要发生新建、删除、重命名或移动，就必须同步更新 [`docs/src/SUMMARY.md`](/home/xinger/MyWork/piper_control_demo/docs/src/SUMMARY.md)，确保 mdBook 目录保持准确。
 
 ## 项目目标
@@ -65,6 +64,8 @@
 - `assets/`
   用于放置项目资源文件；从当前 `core/path.py` 来看，已经开始纳入机器人描述与 URDF 相关路径。
 
+- 当前默认夹爪配置按 `PiperGripperType.V2` 理解，`gripper_pos` 的常用合法区间可按 `0.0` 到 `0.1` 米、`gripper_effort` 最大值按 `2.0 Nm` 理解。
+
 ### 调试脚本
 
 [`scripts`](/home/xinger/MyWork/piper_control_demo/scripts) 目录下现在同时包含“硬件调试脚本”和“工具/实验脚本”。
@@ -72,7 +73,7 @@
 - [`show_status.py`](/home/xinger/MyWork/piper_control_demo/scripts/show_status.py)
   连接机械臂后持续打印状态与关节信息，适合确认通信是否正常。
 - [`move_debug.py`](/home/xinger/MyWork/piper_control_demo/scripts/move_debug.py)
-  用于基础动作调试，包含初始化、将 6 个关节的碰撞保护等级固定设为 `5`、移动到目标位姿、以及可选的安全失能流程。
+  用于基础动作调试，包含初始化、将 6 个关节的碰撞保护等级固定设为 `5`、在 `reset_gripper` 后确认夹爪使能、按手工可改的 7 维目标位分别控制 6 关节与夹爪，以及可选的安全失能流程；当前脚本前部已经整理出几个关键调参项：`TARGET_POSE_7D` 表示 `[j1, j2, j3, j4, j5, j6, gripper_pos]`，`JOINT_SAFE_SPEED` 表示内置位置速度控制模式下的安全速度建议值，`GRIPPER_EFFORT_NOW` 表示当前夹爪夹持力度，`COLLISION_PROTECTION_LEVELS` 表示 6 个关节的碰撞保护等级。
 - [`disable_safe.py`](/home/xinger/MyWork/piper_control_demo/scripts/disable_safe.py)
   用于手动让机械臂失能，执行前要求机械臂已经处于安全姿态。
 
@@ -136,9 +137,21 @@
 - 检查当前是否已使能
 - 必要时执行 `reset_arm`
 - 执行 `reset_gripper`
+- 确认夹爪已使能
 - 设置 6 个关节的碰撞保护等级为 `5`
-- 进入位置控制器并移动到目标点
+- 进入位置控制器并按 7 维目标位分别控制 6 个关节和夹爪
 - 可选地回到安全位后失能
+
+如果后续要手工调试这个脚本，最先关注的通常就是：
+
+- `TARGET_POSE_7D`
+  前 6 维是关节目标，第 7 维是夹爪位置。
+- `JOINT_SAFE_SPEED`
+  当前用于限制基础运动调试速度，值越小通常越保守。
+- `GRIPPER_EFFORT_NOW`
+  当前夹爪命令使用的力度。
+- `COLLISION_PROTECTION_LEVELS`
+  当前 6 个关节的碰撞保护等级。
 
 这也是目前最接近“项目主流程”的脚本。
 

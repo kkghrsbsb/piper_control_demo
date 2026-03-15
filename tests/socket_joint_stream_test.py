@@ -188,10 +188,10 @@ def main():
                 robot,
                 rest_position=None,
         ) as controller:
-            robot.set_arm_mode(speed=5)
+            robot.set_arm_mode(speed=10)
             print(f"moving to safe position before disable: {SAFE_DISABLE_POSITION}")
             reached_safe_position = controller.move_to_position(
-                SAFE_DISABLE_POSITION, threshold=0.01, timeout=8.0
+                SAFE_DISABLE_POSITION, threshold=0.01, timeout=12.0
             )
             print(f"reached safe position: {reached_safe_position}")
 

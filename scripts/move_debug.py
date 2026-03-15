@@ -5,9 +5,27 @@ from piper_control import (
     piper_init,
     piper_interface,
 )
-from piper_control_demo.config import connect_can, probe_arm_enabled_state
+from piper_control_demo.config import (
+    connect_can,
+    probe_arm_enabled_state,
+    probe_gripper_enabled_state,
+)
+
+# 目标位姿，前 6 个元素是关节角度，第 7 个元素是夹爪位置
+# 控制范围见 https://github.com/Reimagine-Robotics/piper_control/blob/main/src/piper_control/piper_interface.py
+
+# target_pose = [j1, j2, j3, j4, j5, j6, gripper_pos] -> gripper_pos range: [0, 0.1]
+TARGET_POSE_7D = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
+# (内置)位置速度控制模式的速度 range: [0, 100]
+# ⚠ 测试安全运动速度范围是 [5, 20], 值越小越安全
+JOINT_SAFE_SPEED = 5
+
+# 夹爪夹持时允许施加的力 range: [0, 2]
+GRIPPER_EFFORT_NOW = 0.3
+
+# 6个关节的碰撞保护等级
 COLLISION_PROTECTION_LEVELS = [5, 5, 5, 5, 5, 5]
 
 
@@ -37,6 +55,14 @@ def main():
 
     print("resetting gripper")
     piper_init.reset_gripper(robot)
+    is_gripper_enabled = probe_gripper_enabled_state(robot)
+    
+    if not is_gripper_enabled:
+        print("enabling gripper")
+        robot.enable_gripper()
+        is_gripper_enabled = probe_gripper_enabled_state(robot)
+    print(f"gripper enabled: {is_gripper_enabled}")
+    print(f"current gripper state: {robot.get_gripper_state()}")
 
     robot.show_status()
 
@@ -46,16 +72,17 @@ def main():
             # 为退出时要去的目标关节角，值为None到达目标位不动，此值在Builin模式下库中被定义是 timeout=5
             rest_position=None,
     ) as controller:
-        # ⚠ (ModeCtrl speed=5) for safer motion.
-        robot.set_arm_mode(speed=5)
+        robot.set_arm_mode(speed=JOINT_SAFE_SPEED)
         print(f"current joints: {robot.get_joint_positions()}")
 
-        reach_position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        # [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        # [0.2, 0.2, -0.2, 0.3, -0.2, 0.5]
+        reach_position = TARGET_POSE_7D[:6]
+        gripper_position = TARGET_POSE_7D[6]
         print(f"moving to position: {reach_position}")
-        success = controller.move_to_position(reach_position, threshold=0.01, timeout=8.0)
+        success = controller.move_to_position(reach_position, threshold=0.01, timeout=12.0)
         print(f"reached target: {success}")
+        print(f"moving gripper to position: {gripper_position}")
+        robot.command_gripper(gripper_position, GRIPPER_EFFORT_NOW)
+        print(f"current gripper state: {robot.get_gripper_state()}")
 
     # 结束后是否失能（默认不失能，避免误操作）
     disable_confirm = input(
@@ -70,14 +97,15 @@ def main():
                 robot,
                 rest_position=None,
         ) as controller:
-            robot.set_arm_mode(speed=5)
+            robot.set_arm_mode(speed=10)
             safe_position = [0.0, 0.0, 0.0, 0.02, 0.5, 0.0]
             print(f"moving to safe position before disable: {safe_position}")
-            reached_safe_position = controller.move_to_position(safe_position, threshold=0.01, timeout=8.0)
+            reached_safe_position = controller.move_to_position(safe_position, threshold=0.01, timeout=12.0)
             print(f"reached safe position: {reached_safe_position}")
 
         if reached_safe_position:
             time.sleep(1)
+            robot.disable_gripper()
             piper_init.disable_arm(robot)
         else:
             print("safe position not reached, skip disabling arm.")

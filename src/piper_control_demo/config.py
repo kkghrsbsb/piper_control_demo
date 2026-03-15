@@ -58,3 +58,26 @@ def probe_arm_enabled_state(
         print(f"arm appears disabled (samples={enabled_samples}).")
 
     return is_enabled
+
+
+def probe_gripper_enabled_state(
+        robot,
+        settle_seconds=0.3,
+        sample_count=5,
+        sample_interval=0.05,
+):
+    """通过多次采样状态来探测夹爪是否已使能。"""
+
+    time.sleep(settle_seconds)
+    enabled_samples = []
+    for _ in range(sample_count):
+        enabled_samples.append(robot.is_gripper_enabled())
+        time.sleep(sample_interval)
+
+    is_enabled = any(enabled_samples)
+    if is_enabled:
+        print(f"gripper appears enabled (samples={enabled_samples}), skip enable_gripper.")
+    else:
+        print(f"gripper appears disabled (samples={enabled_samples}).")
+
+    return is_enabled
