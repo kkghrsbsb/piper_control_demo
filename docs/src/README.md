@@ -59,6 +59,13 @@
 - [`models/piper_grav_comp.xml`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/models/piper_grav_comp.xml)
   是重力补偿实验使用的模型文件。
 
+### 仿真辅助代码
+
+- [`src/piper_pybullet_sim/joint_slider_control.py`](/home/xinger/MyWork/piper_control_demo/src/piper_pybullet_sim/joint_slider_control.py)
+  是较早的 PyBullet 滑条控制版本，按关节逐个暴露滑条。
+- [`src/piper_pybullet_sim/slider_arm_gripper.py`](/home/xinger/MyWork/piper_control_demo/src/piper_pybullet_sim/slider_arm_gripper.py)
+  是针对夹爪控制进一步整理后的版本：不再直接分别暴露 `joint7` 和 `joint8`，而是改成单一的 `gripper_position` 滑条，并在程序内部按镜像关系同步驱动两侧夹爪手指；这是基于该夹爪在 URDF 中属于连杆同步机构所做的仿真控制优化，目的是让仿真端的夹爪控制方式更接近后续 7 位目标位或 7 维 socket 数据里的单一夹爪位置语义。
+
 ### 资源目录
 
 - `assets/`
@@ -84,7 +91,7 @@
 - [`socket_joint_stream_test.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_stream_test.py)
   参考 `move_debug.py` 的初始化流程，在机械臂运动到零位后启动本机模拟 socket 发送，并按 200Hz 关节角流驱动机械臂从零位跟随到目标位姿。
 - [`pybullet_socket_stream_sender.py`](/home/xinger/MyWork/piper_control_demo/tests/pybullet_socket_stream_sender.py)
-  启动 PyBullet 滑条仿真，并把前 6 个关节的当前目标值以 200Hz socket JSON 行流持续发送出去。
+  启动 PyBullet 滑条仿真，并把前 6 个关节的当前目标值以 200Hz socket JSON 行流持续发送出去；它目前仍然是“6 关节发送端”，还没有接入基于单一 `gripper_position` 语义的 7 维夹爪发送版本。
 - [`socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
   在真实机械臂回零后等待发送端前几帧回到零位，确认后进入实时跟随；控制保持按流实时下发，当前关节角输出采用降采样打印，并支持按 `q` 键结束跟随后再进入失能确认。
 
@@ -98,6 +105,24 @@
   提供交互式轨迹录制、保存、加载与回放，也支持结合重力补偿进行示教实验。
 - [`scripts/README.md`](/home/xinger/MyWork/piper_control_demo/scripts/README.md)
   已经记录了这部分脚本的背景和风险说明。
+
+## 当前已完成与后续准备的区分
+
+关于 PyBullet 夹爪控制这一块，当前文档需要明确区分“已经完成的仿真控制优化”和“后续还要继续接入的工作”。
+
+已完成的部分：
+
+- [`src/piper_pybullet_sim/slider_arm_gripper.py`](/home/xinger/MyWork/piper_control_demo/src/piper_pybullet_sim/slider_arm_gripper.py)
+  已经把仿真夹爪从 `joint7` / `joint8` 两个独立滑条，整理成单一 `gripper_position` 滑条。
+- 该脚本会在内部按镜像关系同步驱动两侧夹爪手指。
+- 这说明在仿真环境里，夹爪控制语义已经从“两个关节分别调”收敛成了“一个夹爪位置统一调”。
+
+还没有完成、但已经为后续做准备的部分：
+
+- [`tests/pybullet_socket_stream_sender.py`](/home/xinger/MyWork/piper_control_demo/tests/pybullet_socket_stream_sender.py)
+  目前仍然主要面向前 6 个关节的 socket 发送。
+- 后续如果要做完整的 7 位目标位或 7 维 socket 数据流，还需要把“单一 `gripper_position`”这一层语义继续接入到发送端和接收端。
+- 换句话说，`slider_arm_gripper.py` 解决的是“仿真里怎么更正确地表示夹爪控制”，而不是“7 维夹爪 socket 链路已经全部完成”。
 
 ## 目前最值得先读的文件
 

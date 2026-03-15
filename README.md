@@ -50,4 +50,5 @@ mdbook serve docs
 - 任何会让机械臂上电、使能、复位、驱动夹爪或发生实际运动的操作，都属于高风险动作。
 - AI 可以协助读代码、写代码、改文档、整理命令和分析流程，但不能代替人工去执行激活机械臂并进行运动控制的尝试。
 - `scripts/move_debug.py` 当前已把关键调参项整理在文件前部，包括 `TARGET_POSE_7D`、`JOINT_SAFE_SPEED`、`GRIPPER_EFFORT_NOW` 和 `COLLISION_PROTECTION_LEVELS`，并支持在手工可改的 7 维目标位里同时控制 6 个关节与夹爪。
+- `src/piper_pybullet_sim/slider_arm_gripper.py` 当前把仿真夹爪整理成单一 `gripper_position` 滑条，并在内部镜像驱动两侧夹爪手指；这是仿真控制语义的优化，后续 7 位目标位 / 7 维数据流链路仍需继续接入。
 - 涉及风险边界、项目结构和脚本用途的更完整说明，以 [`docs/src/README.md`](./docs/src/README.md) 为准。
