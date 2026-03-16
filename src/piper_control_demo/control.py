@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import select
 import sys
 import termios
@@ -20,6 +21,13 @@ MOVE_STEP_ALPHA = 0.2
 SAFE_DISABLE_SPEED = 10
 # 失能前回到的安全关节位姿
 SAFE_DISABLE_POSITION = [0.0, 0.0, 0.0, 0.02, 0.5, 0.0]
+
+
+@dataclass(frozen=True)
+class ShutdownResult:
+    disable_requested: bool
+    safe_position_reached: bool
+    shutdown_completed: bool
 
 
 
@@ -92,7 +100,14 @@ def confirm_and_shutdown(
         threshold=MOVE_THRESHOLD,
         timeout=MOVE_TIMEOUT_SECONDS,
 ):
-    """Ask whether to move to a safe pose and disable gripper/arm."""
+    """Ask whether to move to a safe pose and disable gripper/arm.
+
+    Returns:
+        ShutdownResult:
+            disable_requested: 用户是否选择进入失能流程
+            safe_position_reached: 是否成功到达安全位
+            shutdown_completed: 是否最终完成夹爪与机械臂失能
+    """
 
     if emergency_stop_triggered:
         disable_prompt = "Motion interrupted by emergency stop. Disable arm at safe position now? [y/N]: "
@@ -102,7 +117,11 @@ def confirm_and_shutdown(
     disable_confirm = input(disable_prompt).strip().lower()
     if disable_confirm not in {"y", "yes", "Y"}:
         print("skip disabling arm.")
-        return False, False, False
+        return ShutdownResult(
+            disable_requested=False,
+            safe_position_reached=False,
+            shutdown_completed=False,
+        )
 
     print("finished, disabling arm.")
     print("WARNING: the arm will power off and drop.")
@@ -128,8 +147,16 @@ def confirm_and_shutdown(
         time.sleep(1)
         robot.disable_gripper()
         piper_init.disable_arm(robot)
-        return True, True, True
+        return ShutdownResult(
+            disable_requested=True,
+            safe_position_reached=True,
+            shutdown_completed=True,
+        )
 
     print("safe position not reached, skip disabling arm.")
     print(f"current joints: {robot.get_joint_positions()}")
-    return True, False, False
+    return ShutdownResult(
+        disable_requested=True,
+        safe_position_reached=False,
+        shutdown_completed=False,
+    )

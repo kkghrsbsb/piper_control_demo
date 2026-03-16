@@ -1,13 +1,11 @@
 # 运动调试
 from piper_control import (
     piper_control,
-    piper_init,
     piper_interface,
 )
 from piper_control_demo.config import (
     connect_can,
-    probe_arm_enabled_state,
-    probe_gripper_enabled_state,
+    ensure_arm_and_gripper_enabled,
 )
 from piper_control_demo.control import (
     confirm_and_shutdown,
@@ -16,6 +14,7 @@ from piper_control_demo.control import (
 
 # 目标位姿，前 6 个元素是关节角度，第 7 个元素是夹爪位置
 # 控制范围见 https://github.com/Reimagine-Robotics/piper_control/blob/main/src/piper_control/piper_interface.py
+# 一些运动重要参数见 .src/piper_control_demo/control.py
 
 # target_pose = [j1, j2, j3, j4, j5, j6, gripper_pos] -> gripper_pos range: [0, 0.1]
 TARGET_POSE_7D = [0.2, 0.2, -0.2, 0.3, -0.2, 0.5, 0.0]
@@ -23,22 +22,13 @@ TARGET_POSE_7D = [0.2, 0.2, -0.2, 0.3, -0.2, 0.5, 0.0]
 
 # (内置)位置速度控制模式的速度 range: [0, 100]
 # ⚠ 测试安全运动速度范围是 [5, 20], 值越小越安全
-JOINT_SAFE_SPEED = 5
+JOINT_SAFE_SPEED = 10
 
 # 夹爪夹持时允许施加的力 range: [0, 2]
 GRIPPER_EFFORT_NOW = 1
 
 # 6个关节的碰撞保护等级 
 COLLISION_PROTECTION_LEVELS = [5, 5, 5, 5, 5, 5]
-
-# 控制循环频率
-MOVE_CONTROL_HZ = 200.0
-# 单次运动运动最大允许时长，超过时自动停止
-MOVE_TIMEOUT_SECONDS = 12.0
-# 到位判定阈值
-MOVE_THRESHOLD = 0.01
-# 到位判定滑动平均窗口大小
-MOVE_STEP_ALPHA = 0.2
 
 
 def main():
@@ -55,27 +45,7 @@ def main():
         robot.get_collision_protection(),
     )
 
-    is_enabled = probe_arm_enabled_state(robot)
-
-    # 重置或失能机械臂关节与夹爪
-    if not is_enabled:
-        print("resetting arm")
-        piper_init.reset_arm(
-            robot,
-            arm_controller=piper_interface.ArmController.POSITION_VELOCITY,
-            move_mode=piper_interface.MoveMode.JOINT,
-        )
-
-    print("resetting gripper")
-    piper_init.reset_gripper(robot)
-    is_gripper_enabled = probe_gripper_enabled_state(robot)
-    
-    if not is_gripper_enabled:
-        print("enabling gripper")
-        robot.enable_gripper()
-        is_gripper_enabled = probe_gripper_enabled_state(robot)
-    print(f"gripper enabled: {is_gripper_enabled}")
-    print(f"current gripper state: {robot.get_gripper_state()}")
+    ensure_arm_and_gripper_enabled(robot)
 
     robot.show_status()
     
@@ -100,10 +70,6 @@ def main():
             robot,
             controller,
             reach_position,
-            speed_hz=MOVE_CONTROL_HZ,
-            threshold=MOVE_THRESHOLD,
-            timeout=MOVE_TIMEOUT_SECONDS,
-            step_alpha=MOVE_STEP_ALPHA,
         )
         print(f"reached target: {success}")
         if emergency_stop_triggered:
@@ -119,8 +85,6 @@ def main():
     confirm_and_shutdown(
         robot,
         emergency_stop_triggered=emergency_stop_triggered,
-        threshold=MOVE_THRESHOLD,
-        timeout=MOVE_TIMEOUT_SECONDS,
     )
 
 

@@ -53,7 +53,7 @@
 源码位于 [`src/piper_control_demo`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo)。
 
 - [`config.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/config.py)
-  负责 CAN 端口发现、激活，以及机械臂使能状态探测。
+  负责 CAN 端口发现、激活，以及机械臂/夹爪使能状态探测；当前也已提供 `ensure_arm_and_gripper_enabled()`，用于把真实控制脚本里的使能准备流程收敛成公共实现。
 - [`control.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/control.py)
   提供公共控制辅助能力，当前已抽出软件层键盘急停和公共收尾失能流程实现，供真实机械臂控制脚本复用。
 - [`core/path.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/core/path.py)
@@ -201,6 +201,8 @@ with piper_control.BuiltinJointPositionController(...)
 - 回安全位行为一致
 - 夹爪与机械臂的失能顺序一致
 - 安全位失败时的处理方式一致
+
+目前 `move_debug.py` 里的前置使能准备也已开始复用公共实现；后续类似脚本如果同样需要“连接后检查机械臂使能、必要时 reset_arm，再 reset_gripper 并确认夹爪可用”，应优先复用 `ensure_arm_and_gripper_enabled()`。
 
 这也是目前最接近“项目主流程”的脚本。
 

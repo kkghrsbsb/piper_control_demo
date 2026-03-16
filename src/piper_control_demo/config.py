@@ -1,4 +1,4 @@
-from piper_control import piper_connect, piper_init
+from piper_control import piper_connect, piper_init, piper_interface
 import time
 
 def connect_can():
@@ -81,3 +81,32 @@ def probe_gripper_enabled_state(
         print(f"gripper appears disabled (samples={enabled_samples}).")
 
     return is_enabled
+
+
+def ensure_arm_and_gripper_enabled(robot) -> tuple[bool, bool]:
+    """确保机械臂与夹爪都处于可控制状态。"""
+
+    is_arm_enabled = probe_arm_enabled_state(robot)
+    if not is_arm_enabled:
+        print("resetting arm")
+        piper_init.reset_arm(
+            robot,
+            arm_controller=piper_interface.ArmController.POSITION_VELOCITY,
+            move_mode=piper_interface.MoveMode.JOINT,
+        )
+        is_arm_enabled = True
+
+    print("resetting gripper")
+    piper_init.reset_gripper(robot)
+    is_gripper_enabled = probe_gripper_enabled_state(robot)
+
+    if not is_gripper_enabled:
+        print("enabling gripper")
+        robot.enable_gripper()
+        is_gripper_enabled = probe_gripper_enabled_state(robot)
+
+    print(f"arm enabled: {is_arm_enabled}")
+    print(f"gripper enabled: {is_gripper_enabled}")
+    print(f"current gripper state: {robot.get_gripper_state()}")
+
+    return is_arm_enabled, is_gripper_enabled
