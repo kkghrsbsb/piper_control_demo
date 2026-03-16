@@ -9,6 +9,8 @@
 - When the user explicitly asks for a change, decision, convention, or detail to be documented, record it in `docs/src/README.md`.
 - When making a change that seems important for future understanding of the repository, or when a detail is likely to matter in later work, proactively update `docs/src/README.md` even if the user did not separately remind you.
 - When citing project background or giving repository-level explanations, prefer `docs/src/README.md` unless newer source files clearly supersede it.
+- For real robot scripts that control joints inside `with piper_control.BuiltinJointPositionController(...)`, default to evaluating and reusing the shared software-layer keyboard e-stop capability unless there is a clear reason not to.
+- For real robot scripts that include an operator-confirmed return-to-safe-pose and disable sequence, default to evaluating and reusing the shared shutdown flow capability unless there is a clear reason not to.
 
 ## Feature request workflow
 - When the user proposes a new feature, do not change code immediately.
@@ -25,6 +27,28 @@
   - implementation steps
 - After writing the plan document, stop and wait for user confirmation before editing code.
 - Do not modify source code until the user explicitly approves the plan.
+
+## Code review and proposal workflow
+- When the user asks for a code review, do not change code immediately.
+- First, inspect the relevant code, related modules, and existing behavior.
+- Identify problems such as logic bugs, fragile assumptions, missing validation, poor structure, unclear naming, dead code, performance issues, and maintainability risks.
+- Before making any code changes, create a review document under `docs/src/review/`.
+- The review document must be a Markdown file with a clear, descriptive kebab-case filename.
+- Creating a new review document under `docs/src/review/` also requires updating `docs/src/SUMMARY.md`.
+- The review document should explain:
+  - review scope
+  - files reviewed
+  - current behavior summary
+  - findings and issues
+  - severity and impact of each issue
+  - root cause analysis
+  - recommended design or fix direction
+  - affected files or modules
+  - risks, edge cases, and compatibility concerns
+  - suggested implementation order
+- Prefer concrete and actionable findings over vague comments.
+- After writing the review document, stop and wait for user confirmation.
+- Do not modify source code until the user explicitly approves the proposed changes.
 
 ## Commit message format
 - When the user asks for commit text, generate a Git commit message instead of committing.

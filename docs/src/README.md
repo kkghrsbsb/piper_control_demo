@@ -54,6 +54,8 @@
 
 - [`config.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/config.py)
   负责 CAN 端口发现、激活，以及机械臂使能状态探测。
+- [`control.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/control.py)
+  提供公共控制辅助能力，当前已抽出软件层键盘急停和公共收尾失能流程实现，供真实机械臂控制脚本复用。
 - [`core/path.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/core/path.py)
   提供项目根目录定位，并维护 `assets/`、机器人描述和 URDF 等资源路径索引。
 - [`models/piper_grav_comp.xml`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/models/piper_grav_comp.xml)
@@ -80,7 +82,7 @@
 - [`show_status.py`](/home/xinger/MyWork/piper_control_demo/scripts/show_status.py)
   连接机械臂后持续打印状态与关节信息，适合确认通信是否正常。
 - [`move_debug.py`](/home/xinger/MyWork/piper_control_demo/scripts/move_debug.py)
-  用于基础动作调试，包含初始化、将 6 个关节的碰撞保护等级固定设为 `5`、在 `reset_gripper` 后确认夹爪使能、按手工可改的 7 维目标位分别控制 6 关节与夹爪，以及可选的安全失能流程；当前脚本前部已经整理出几个关键调参项：`TARGET_POSE_7D` 表示 `[j1, j2, j3, j4, j5, j6, gripper_pos]`，`JOINT_SAFE_SPEED` 表示内置位置速度控制模式下的安全速度建议值，`GRIPPER_EFFORT_NOW` 表示当前夹爪夹持力度，`COLLISION_PROTECTION_LEVELS` 表示 6 个关节的碰撞保护等级。
+  用于基础动作调试，包含初始化、将 6 个关节的碰撞保护等级固定设为 `5`、在 `reset_gripper` 后确认夹爪使能、按手工可改的 7 维目标位分别控制 6 关节与夹爪，以及可选的安全失能流程；当前脚本前部已经整理出几个关键调参项：`TARGET_POSE_7D` 表示 `[j1, j2, j3, j4, j5, j6, gripper_pos]`，`JOINT_SAFE_SPEED` 表示内置位置速度控制模式下的安全速度建议值，`GRIPPER_EFFORT_NOW` 表示当前夹爪夹持力度，`COLLISION_PROTECTION_LEVELS` 表示 6 个关节的碰撞保护等级；关节运动阶段支持按 `q` 做软件层中断，结束后的人机确认回安全位/失能流程也已经抽到公共模块复用。
 - [`disable_safe.py`](/home/xinger/MyWork/piper_control_demo/scripts/disable_safe.py)
   用于手动让机械臂失能，执行前要求机械臂已经处于安全姿态。
 
@@ -177,6 +179,28 @@
   当前夹爪命令使用的力度。
 - `COLLISION_PROTECTION_LEVELS`
   当前 6 个关节的碰撞保护等级。
+
+脚本在关节运动阶段支持按 `q` 做软件层中断：
+
+- 按下 `q` 后会尽快停止继续下发新的关节目标位
+- 会跳过后续夹爪动作
+- 会退出当前控制段并回到人工确认流程
+- 这只是脚本层快速停止，不等于硬件级急停
+
+这项能力现在已经抽取为公共实现；后续凡是涉及：
+
+```python
+with piper_control.BuiltinJointPositionController(...)
+```
+
+的真实机械臂控制脚本，都应默认评估并优先复用这套公共软件层急停能力，除非有明确理由不接入。
+
+同样地，如果脚本在任务结束后存在“人工确认后可选回安全位并失能”的流程，也应优先复用公共收尾失能流程，保持下面这些行为一致：
+
+- 提示语分支一致
+- 回安全位行为一致
+- 夹爪与机械臂的失能顺序一致
+- 安全位失败时的处理方式一致
 
 这也是目前最接近“项目主流程”的脚本。
 
