@@ -14,19 +14,21 @@ from piper_control_demo.control import (
     move_to_position_with_keyboard_stop,
 )
 
-# 目标位姿，前 6 个元素是关节角度，第 7 个元素是夹爪位置
+# 目标位姿：`q` 只表示 6 个关节，夹爪位置单独定义
 # 控制范围见 https://github.com/Reimagine-Robotics/piper_control/blob/main/src/piper_control/piper_interface.py
-# 一些运动重要参数见 .src/piper_control_demo/control.py
+# 一些运动重要参数的范围见 .src/piper_control_demo/control.py
 
-# target_pose = [j1, j2, j3, j4, j5, j6, gripper_pos] -> gripper_pos range: [0, 0.1]
-TARGET_POSE_7D = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+# target_q = [j1, j2, j3, j4, j5, j6]
+TARGET_Q = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+# target_gripper range: [0, 0.1]
+TARGET_GRIPPER = 0.0
 
 # (内置)位置速度控制模式的速度 range: [0, 100]
 # ⚠ 测试安全运动速度范围是 [5, 20], 值越小越安全
 JOINT_SAFE_SPEED = 10
 
 # 夹爪夹持时允许施加的力 range: [0, 2]
-GRIPPER_EFFORT_NOW = 1
+GRIPPER_EFFORT_NOW = 0.5
 
 # 6 个关节的碰撞保护等级，一些验证参数见 .src/piper_control_demo/config.py
 COLLISION_PROTECTION_LEVELS = DEFAULT_COLLISION_PROTECTION_LEVELS
@@ -61,8 +63,8 @@ def main():
         robot.set_arm_mode(speed=JOINT_SAFE_SPEED)
         print(f"current joints: {robot.get_joint_positions()}")
 
-        reach_position = TARGET_POSE_7D[:6]
-        gripper_position = TARGET_POSE_7D[6]
+        reach_position = TARGET_Q
+        gripper_position = TARGET_GRIPPER
         print(f"moving to position: {reach_position}")
         
         # 必要时按下按键 "q" 进行急停；函数内部也会做程序层运动异常守护

@@ -1,11 +1,16 @@
 # Summary
 
 - [README](README.md)
-- [schedule-kkghrsbsb](next/schedule.md)
+- [next]()
+  - [schedule-kkghrsbsb](next/schedule.md)
+  - [master-arm-to-pybullet-slave-2026-03-16](next/2026-03-16_master_arm_to_pybullet_slave.md)
 - [review]()
   - [move_debug_review_2026-03-16](review/move_debug_review_2026-03-16.md)
   - [collision_protection_review_2026-03-16](review/collision_protection_review_2026-03-16.md)
   - [collision_protection_function_review_2026-03-16](review/collision_protection_function_review_2026-03-16.md)
+  - [socket_7d_joint_and_gripper_control_review_2026-03-16](review/socket_7d_joint_and_gripper_control_review_2026-03-16.md)
+- [explain]()
+  - [piper_socket_bridge_initial_setup_2026-03-16](explain/piper_socket_bridge_initial_setup_2026-03-16.md)
 - [plan]()
   - [socket_joint_stream_test](plan/socket_joint_stream_test.md)
   - [pybullet_socket_realtime_follow_test](plan/pybullet_socket_realtime_follow_test.md)
@@ -15,3 +20,5 @@
   - [shared_shutdown_flow_standard](plan/shared_shutdown_flow_standard.md)
   - [shared_collision_protection_config](plan/shared_collision_protection_config.md)
   - [software_motion_guard_for_collision_like_events](plan/software_motion_guard_for_collision_like_events.md)
+  - [piper_socket_bridge_unified_7d_adapters](plan/piper_socket_bridge_unified_7d_adapters.md)
+  - [slider_arm_gripper_based_sim_and_bidirectional_tests](plan/slider_arm_gripper_based_sim_and_bidirectional_tests.md)

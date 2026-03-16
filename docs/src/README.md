@@ -61,12 +61,17 @@
 - [`models/piper_grav_comp.xml`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/models/piper_grav_comp.xml)
   是重力补偿实验使用的模型文件。
 
+### Socket 桥接代码
+
+- `src/piper_socket_bridge/`
+  用于承载新的 socket 关节流转发库代码。当前已初步搭出统一协议、仿真发送端适配和真实机械臂接收端跟随骨架，协议格式采用 `{"t": ..., "q": [j1, ..., j6], "gripper": ...}`；这里的真实机械臂控制基线，也明确以当前“新版” [`scripts/move_debug.py`](/home/xinger/MyWork/piper_control_demo/scripts/move_debug.py) 的初始化、安全动作、公共碰撞保护配置、公共软件层急停、程序层运动异常守护和公共收尾失能流程为标准，不再回退参考旧的 socket 测试主流程。
+
 ### 仿真辅助代码
 
 - [`src/piper_pybullet_sim/joint_slider_control.py`](/home/xinger/MyWork/piper_control_demo/src/piper_pybullet_sim/joint_slider_control.py)
   是较早的 PyBullet 滑条控制版本，按关节逐个暴露滑条。
 - [`src/piper_pybullet_sim/slider_arm_gripper.py`](/home/xinger/MyWork/piper_control_demo/src/piper_pybullet_sim/slider_arm_gripper.py)
-  是针对夹爪控制进一步整理后的版本：不再直接分别暴露 `joint7` 和 `joint8`，而是改成单一的 `gripper_position` 滑条，并在程序内部按镜像关系同步驱动两侧夹爪手指；这是基于该夹爪在 URDF 中属于连杆同步机构所做的仿真控制优化，目的是让仿真端的夹爪控制方式更接近后续 7 位目标位或 7 维 socket 数据里的单一夹爪位置语义。
+  是针对夹爪控制进一步整理后的版本：不再直接分别暴露 `joint7` 和 `joint8`，而是改成单一的 `gripper_position` 滑条，并在程序内部按镜像关系同步驱动两侧夹爪手指；这是基于该夹爪在 URDF 中属于连杆同步机构所做的仿真控制优化，目的是让仿真端的夹爪控制方式更接近后续 socket 协议中的独立 `gripper` 字段语义。
 
 ### 资源目录
 
@@ -80,9 +85,9 @@
 [`scripts`](/home/xinger/MyWork/piper_control_demo/scripts) 目录下现在同时包含“硬件调试脚本”和“工具/实验脚本”。
 
 - [`show_status.py`](/home/xinger/MyWork/piper_control_demo/scripts/show_status.py)
-  连接机械臂后持续打印状态与关节信息，适合确认通信是否正常。
+  连接机械臂后先打印一次完整状态，然后以约 200Hz 持续输出 JSON 行流，格式为 `{"t": ..., "q": [j1, ..., j6], "gripper": ...}`，适合确认通信是否正常，也可作为后续 socket 协议格式参考。
 - [`move_debug.py`](/home/xinger/MyWork/piper_control_demo/scripts/move_debug.py)
-  用于基础动作调试，包含初始化、通过 `config.py` 中的公共函数为 6 个关节下发并验证碰撞保护等级、在 `reset_gripper` 后确认夹爪使能、按手工可改的 7 维目标位分别控制 6 关节与夹爪，以及可选的安全失能流程；当前脚本前部已经整理出几个关键调参项：`TARGET_POSE_7D` 表示 `[j1, j2, j3, j4, j5, j6, gripper_pos]`，`JOINT_SAFE_SPEED` 表示内置位置速度控制模式下的安全速度建议值，`GRIPPER_EFFORT_NOW` 表示当前夹爪夹持力度，`COLLISION_PROTECTION_LEVELS` 表示 6 个关节的碰撞保护等级；关节运动阶段除了支持按 `q` 做软件层中断外，也会复用公共程序层运动异常守护，发现目标误差长期不下降时会主动停止继续下发新关节目标。
+  用于基础动作调试，包含初始化、通过 `config.py` 中的公共函数为 6 个关节下发并验证碰撞保护等级、在 `reset_gripper` 后确认夹爪使能、按手工可改的目标位分别控制 6 关节与夹爪，以及可选的安全失能流程；当前脚本前部已经整理出几个关键调参项：`TARGET_Q` 表示 6 个关节目标角，`TARGET_GRIPPER` 表示单独的夹爪位置，`JOINT_SAFE_SPEED` 表示内置位置速度控制模式下的安全速度建议值，`GRIPPER_EFFORT_NOW` 表示当前夹爪夹持力度，`COLLISION_PROTECTION_LEVELS` 表示 6 个关节的碰撞保护等级；关节运动阶段除了支持按 `q` 做软件层中断外，也会复用公共程序层运动异常守护，发现目标误差长期不下降时会主动停止继续下发新关节目标。
 - [`disable_safe.py`](/home/xinger/MyWork/piper_control_demo/scripts/disable_safe.py)
   用于手动让机械臂失能，执行前要求机械臂已经处于安全姿态。
 
@@ -93,9 +98,11 @@
 - [`socket_joint_stream_test.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_stream_test.py)
   参考 `move_debug.py` 的初始化流程，在机械臂运动到零位后启动本机模拟 socket 发送，并按 200Hz 关节角流驱动机械臂从零位跟随到目标位姿。
 - [`pybullet_socket_stream_sender.py`](/home/xinger/MyWork/piper_control_demo/tests/pybullet_socket_stream_sender.py)
-  启动 PyBullet 滑条仿真，并把前 6 个关节的当前目标值以 200Hz socket JSON 行流持续发送出去；它目前仍然是“6 关节发送端”，还没有接入基于单一 `gripper_position` 语义的 7 维夹爪发送版本。
+  启动基于 `piper_socket_bridge` 的 PyBullet 滑条发送端，参考 `slider_arm_gripper.py` 的单一夹爪滑条语义，并以约 200Hz 持续发送 `{"t": ..., "q": [...], "gripper": ...}` JSON 行流。
 - [`socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
-  在真实机械臂回零后等待发送端前几帧回到零位，确认后进入实时跟随；控制保持按流实时下发，当前关节角输出采用降采样打印，并支持按 `q` 键结束跟随后再进入失能确认。
+  启动基于 `piper_socket_bridge` 的真实机械臂接收端；在机械臂回零并确认发送端也处于零位后，按流实时下发 6 关节命令与独立夹爪命令，并支持按 `q` 键结束跟随后再进入失能确认。
+- `tests/socket_old/`
+  用于存放历史 socket 测试文件。这部分内容现在主要作为回溯或对照参考，尤其是其中旧版 `main()` 控制实现不再作为后续 socket 新功能的实现标准。
 
 ### 实验脚本
 
@@ -122,9 +129,10 @@
 还没有完成、但已经为后续做准备的部分：
 
 - [`tests/pybullet_socket_stream_sender.py`](/home/xinger/MyWork/piper_control_demo/tests/pybullet_socket_stream_sender.py)
-  目前仍然主要面向前 6 个关节的 socket 发送。
-- 后续如果要做完整的 7 位目标位或 7 维 socket 数据流，还需要把“单一 `gripper_position`”这一层语义继续接入到发送端和接收端。
-- 换句话说，`slider_arm_gripper.py` 解决的是“仿真里怎么更正确地表示夹爪控制”，而不是“7 维夹爪 socket 链路已经全部完成”。
+  现在已经按新的 `q + gripper` 协议骨架接入了单一夹爪语义。
+- [`tests/socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
+  现在也已按同一协议骨架接入了真实机械臂接收端，能在同一个控制周期里连续下发 6 关节和夹爪命令。
+- 换句话说，新的单向测试链路骨架已经搭好，但双向流、LeRobot 适配和更完整的库结构仍待继续完善。
 
 ## 目前最值得先读的文件
 
@@ -166,13 +174,15 @@
 - 执行 `reset_gripper`
 - 确认夹爪已使能
 - 通过 `config.py` 的公共配置函数设置 6 个关节的碰撞保护等级，并通过等待与多次采样方式验证反馈
-- 进入位置控制器并按 7 维目标位分别控制 6 个关节和夹爪
+- 进入位置控制器并按目标位分别控制 6 个关节和夹爪
 - 可选地回到安全位后失能
 
 如果后续要手工调试这个脚本，最先关注的通常就是：
 
-- `TARGET_POSE_7D`
-  前 6 维是关节目标，第 7 维是夹爪位置。
+- `TARGET_Q`
+  当前 `move_debug.py` 内部使用的 6 关节目标位数组。
+- `TARGET_GRIPPER`
+  当前 `move_debug.py` 内部使用的独立夹爪目标位。
 - `JOINT_SAFE_SPEED`
   当前用于限制基础运动调试速度，值越小通常越保守。
 - `GRIPPER_EFFORT_NOW`
@@ -216,6 +226,12 @@ with piper_control.BuiltinJointPositionController(...)
 目前 `move_debug.py` 里的前置使能准备也已开始复用公共实现；后续类似脚本如果同样需要“连接后检查机械臂使能、必要时 reset_arm，再 reset_gripper 并确认夹爪可用”，应优先复用 `ensure_arm_and_gripper_enabled()`。
 
 这也是目前最接近“项目主流程”的脚本。
+
+对于后续要放进 `src/piper_socket_bridge/` 的 socket 新库，也应按同一条标准执行：
+
+- 以当前新版 `move_debug.py` 的控制方式为准
+- 优先复用已经抽到公共模块的初始化、安全与收尾能力
+- 不再参考 `tests/socket_old/` 中旧版 `main()` 的控制流程作为实现基线
 
 ### 3. 最后再看重力补偿实验
 
