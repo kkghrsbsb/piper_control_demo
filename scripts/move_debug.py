@@ -4,6 +4,8 @@ from piper_control import (
     piper_interface,
 )
 from piper_control_demo.config import (
+    DEFAULT_COLLISION_PROTECTION_LEVELS,
+    configure_collision_protection,
     connect_can,
     ensure_arm_and_gripper_enabled,
 )
@@ -17,8 +19,7 @@ from piper_control_demo.control import (
 # 一些运动重要参数见 .src/piper_control_demo/control.py
 
 # target_pose = [j1, j2, j3, j4, j5, j6, gripper_pos] -> gripper_pos range: [0, 0.1]
-TARGET_POSE_7D = [0.2, 0.2, -0.2, 0.3, -0.2, 0.5, 0.0]
-# [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+TARGET_POSE_7D = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 # (内置)位置速度控制模式的速度 range: [0, 100]
 # ⚠ 测试安全运动速度范围是 [5, 20], 值越小越安全
@@ -27,8 +28,8 @@ JOINT_SAFE_SPEED = 10
 # 夹爪夹持时允许施加的力 range: [0, 2]
 GRIPPER_EFFORT_NOW = 1
 
-# 6个关节的碰撞保护等级 
-COLLISION_PROTECTION_LEVELS = [5, 5, 5, 5, 5, 5]
+# 6 个关节的碰撞保护等级，一些验证参数见 .src/piper_control_demo/config.py
+COLLISION_PROTECTION_LEVELS = DEFAULT_COLLISION_PROTECTION_LEVELS
 
 
 def main():
@@ -39,17 +40,16 @@ def main():
 
     robot = piper_interface.PiperInterface(can_port=ports[0])
     robot.set_installation_pos(piper_interface.ArmInstallationPos.UPRIGHT)
-    robot.set_collision_protection(COLLISION_PROTECTION_LEVELS)
-    print(
-        "collision protection levels:",
-        robot.get_collision_protection(),
-    )
 
+
+    # 重置或使能机械臂关节与夹爪
     ensure_arm_and_gripper_enabled(robot)
+
+    configure_collision_protection(robot, COLLISION_PROTECTION_LEVELS)
 
     robot.show_status()
     
-    # 急停侦测
+    # 记录本次运动是否被人工急停，用于后续收尾提示
     emergency_stop_triggered = False
     
     # 采用内置默认关节位控制器上下文
@@ -65,23 +65,32 @@ def main():
         gripper_position = TARGET_POSE_7D[6]
         print(f"moving to position: {reach_position}")
         
-        # 必要时按下 q 中断运动
-        success, emergency_stop_triggered = move_to_position_with_keyboard_stop(
+        # 必要时按下按键 "q" 进行急停；函数内部也会做程序层运动异常守护
+        motion_result = move_to_position_with_keyboard_stop(
             robot,
             controller,
             reach_position,
         )
-        print(f"reached target: {success}")
+        emergency_stop_triggered = motion_result.keyboard_stop_triggered
+        print(f"reached target: {motion_result.motion_completed}")
+        
         if emergency_stop_triggered:
             print("motion interrupted before gripper command.")
-        elif not success:
+        elif motion_result.motion_guard_triggered:
+            print(
+                "motion interrupted by software motion guard before gripper "
+                "command."
+            )
+        elif motion_result.timeout_triggered:
             print("joint target not reached within timeout, skip gripper command.")
+        elif not motion_result.motion_completed:
+            print("joint motion did not complete, skip gripper command.")
         else:
             print(f"moving gripper to position: {gripper_position}")
             robot.command_gripper(gripper_position, GRIPPER_EFFORT_NOW)
             print(f"current gripper state: {robot.get_gripper_state()}")
 
-    # 提醒与安全失能
+    # 提醒与安全失能机械臂与夹爪
     confirm_and_shutdown(
         robot,
         emergency_stop_triggered=emergency_stop_triggered,

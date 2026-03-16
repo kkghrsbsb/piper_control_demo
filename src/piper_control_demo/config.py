@@ -1,5 +1,15 @@
-from piper_control import piper_connect, piper_init, piper_interface
 import time
+from piper_control import piper_connect, piper_init, piper_interface
+
+
+# 6 个关节的默认碰撞保护等级，按 [j1, j2, j3, j4, j5, j6] 给出
+DEFAULT_COLLISION_PROTECTION_LEVELS = [5, 5, 5, 5, 5, 5]
+# 写入碰撞保护后，先等待设备反馈刷新
+COLLISION_PROTECTION_SETTLE_SECONDS = 0.3
+# 反馈采样次数，用于覆盖设备侧可能存在的刷新延迟
+COLLISION_PROTECTION_SAMPLE_COUNT = 5
+# 相邻两次反馈采样的时间间隔
+COLLISION_PROTECTION_SAMPLE_INTERVAL = 0.1
 
 def connect_can():
     """连接到 Piper 的 CAN 接口并返回已激活的 CAN 端口名称列表。
@@ -110,3 +120,48 @@ def ensure_arm_and_gripper_enabled(robot) -> tuple[bool, bool]:
     print(f"current gripper state: {robot.get_gripper_state()}")
 
     return is_arm_enabled, is_gripper_enabled
+
+
+def verify_collision_protection(
+        robot,
+        expected_levels,
+        settle_seconds=COLLISION_PROTECTION_SETTLE_SECONDS,
+        sample_count=COLLISION_PROTECTION_SAMPLE_COUNT,
+        sample_interval=COLLISION_PROTECTION_SAMPLE_INTERVAL,
+):
+    """写入碰撞保护后，等待并多次读取反馈进行验证。"""
+
+    print(f"setting collision protection levels: {expected_levels}")
+    robot.set_collision_protection(expected_levels)
+
+    time.sleep(settle_seconds)
+    sampled_levels = []
+    for _ in range(sample_count):
+        sampled_levels.append(robot.get_collision_protection())
+        time.sleep(sample_interval)
+
+    matched = any(levels == list(expected_levels) for levels in sampled_levels)
+    print(f"collision protection expected: {list(expected_levels)}")
+    print(f"collision protection samples: {sampled_levels}")
+    print(f"collision protection matched: {matched}")
+
+    return matched
+
+
+def configure_collision_protection(
+        robot,
+        levels=DEFAULT_COLLISION_PROTECTION_LEVELS,
+        *,
+        settle_seconds=COLLISION_PROTECTION_SETTLE_SECONDS,
+        sample_count=COLLISION_PROTECTION_SAMPLE_COUNT,
+        sample_interval=COLLISION_PROTECTION_SAMPLE_INTERVAL,
+):
+    """统一写入并验证真实机械臂的碰撞保护等级。"""
+
+    return verify_collision_protection(
+        robot,
+        levels,
+        settle_seconds=settle_seconds,
+        sample_count=sample_count,
+        sample_interval=sample_interval,
+    )

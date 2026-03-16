@@ -53,9 +53,9 @@
 源码位于 [`src/piper_control_demo`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo)。
 
 - [`config.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/config.py)
-  负责 CAN 端口发现、激活，以及机械臂/夹爪使能状态探测；当前也已提供 `ensure_arm_and_gripper_enabled()`，用于把真实控制脚本里的使能准备流程收敛成公共实现。
+  负责 CAN 端口发现、激活，以及机械臂/夹爪使能状态探测；当前也已提供 `ensure_arm_and_gripper_enabled()`，用于把真实控制脚本里的使能准备流程收敛成公共实现，并已收敛碰撞保护的统一写入与验证逻辑，供真实机械臂脚本复用。
 - [`control.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/control.py)
-  提供公共控制辅助能力，当前已抽出软件层键盘急停和公共收尾失能流程实现，供真实机械臂控制脚本复用。
+  提供公共控制辅助能力，当前已抽出软件层键盘急停、程序层运动异常守护和公共收尾失能流程实现，供真实机械臂控制脚本复用。
 - [`core/path.py`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/core/path.py)
   提供项目根目录定位，并维护 `assets/`、机器人描述和 URDF 等资源路径索引。
 - [`models/piper_grav_comp.xml`](/home/xinger/MyWork/piper_control_demo/src/piper_control_demo/models/piper_grav_comp.xml)
@@ -82,7 +82,7 @@
 - [`show_status.py`](/home/xinger/MyWork/piper_control_demo/scripts/show_status.py)
   连接机械臂后持续打印状态与关节信息，适合确认通信是否正常。
 - [`move_debug.py`](/home/xinger/MyWork/piper_control_demo/scripts/move_debug.py)
-  用于基础动作调试，包含初始化、将 6 个关节的碰撞保护等级固定设为 `5`、在 `reset_gripper` 后确认夹爪使能、按手工可改的 7 维目标位分别控制 6 关节与夹爪，以及可选的安全失能流程；当前脚本前部已经整理出几个关键调参项：`TARGET_POSE_7D` 表示 `[j1, j2, j3, j4, j5, j6, gripper_pos]`，`JOINT_SAFE_SPEED` 表示内置位置速度控制模式下的安全速度建议值，`GRIPPER_EFFORT_NOW` 表示当前夹爪夹持力度，`COLLISION_PROTECTION_LEVELS` 表示 6 个关节的碰撞保护等级；关节运动阶段支持按 `q` 做软件层中断，结束后的人机确认回安全位/失能流程也已经抽到公共模块复用。
+  用于基础动作调试，包含初始化、通过 `config.py` 中的公共函数为 6 个关节下发并验证碰撞保护等级、在 `reset_gripper` 后确认夹爪使能、按手工可改的 7 维目标位分别控制 6 关节与夹爪，以及可选的安全失能流程；当前脚本前部已经整理出几个关键调参项：`TARGET_POSE_7D` 表示 `[j1, j2, j3, j4, j5, j6, gripper_pos]`，`JOINT_SAFE_SPEED` 表示内置位置速度控制模式下的安全速度建议值，`GRIPPER_EFFORT_NOW` 表示当前夹爪夹持力度，`COLLISION_PROTECTION_LEVELS` 表示 6 个关节的碰撞保护等级；关节运动阶段除了支持按 `q` 做软件层中断外，也会复用公共程序层运动异常守护，发现目标误差长期不下降时会主动停止继续下发新关节目标。
 - [`disable_safe.py`](/home/xinger/MyWork/piper_control_demo/scripts/disable_safe.py)
   用于手动让机械臂失能，执行前要求机械臂已经处于安全姿态。
 
@@ -165,7 +165,7 @@
 - 必要时执行 `reset_arm`
 - 执行 `reset_gripper`
 - 确认夹爪已使能
-- 设置 6 个关节的碰撞保护等级为 `5`
+- 通过 `config.py` 的公共配置函数设置 6 个关节的碰撞保护等级，并通过等待与多次采样方式验证反馈
 - 进入位置控制器并按 7 维目标位分别控制 6 个关节和夹爪
 - 可选地回到安全位后失能
 
@@ -180,6 +180,8 @@
 - `COLLISION_PROTECTION_LEVELS`
   当前 6 个关节的碰撞保护等级。
 
+碰撞保护这部分当前也已经开始复用公共实现；后续类似真实机械臂控制脚本如果同样要在动作前写入并验证碰撞保护等级，应优先复用 `configure_collision_protection()`，避免各个脚本分别维护等待时间、采样次数和反馈校验逻辑。
+
 脚本在关节运动阶段支持按 `q` 做软件层中断：
 
 - 按下 `q` 后会尽快停止继续下发新的关节目标位
@@ -187,13 +189,22 @@
 - 会退出当前控制段并回到人工确认流程
 - 这只是脚本层快速停止，不等于硬件级急停
 
+当前公共控制模块里也新增了一层程序层运动异常守护：
+
+- 如果目标误差在连续多个控制周期里几乎不下降
+- 且当前误差仍明显偏大
+- 就会判定本次运动疑似被阻挡、卡住或响应异常
+- 脚本会停止继续下发新关节目标位，并提示人工检查
+
+这层守护同样只是软件层保护，不能替代底层硬件碰撞保护或硬件急停。
+
 这项能力现在已经抽取为公共实现；后续凡是涉及：
 
 ```python
 with piper_control.BuiltinJointPositionController(...)
 ```
 
-的真实机械臂控制脚本，都应默认评估并优先复用这套公共软件层急停能力，除非有明确理由不接入。
+的真实机械臂控制脚本，都应默认评估并优先复用这套公共软件层急停能力与程序层运动异常守护，除非有明确理由不接入。
 
 同样地，如果脚本在任务结束后存在“人工确认后可选回安全位并失能”的流程，也应优先复用公共收尾失能流程，保持下面这些行为一致：
 
