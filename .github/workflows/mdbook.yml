@@ -12,29 +12,43 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      MDBOOK_VERSION: 0.4.36
+      MDBOOK_KATEX_VERSION: 0.9.4
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Install Rust + mdBook + mdbook-katex
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source "$HOME/.cargo/env"
+          rustup update
+
+          cargo install --version "${MDBOOK_VERSION}" mdbook --locked
+          cargo install --version "${MDBOOK_KATEX_VERSION}" mdbook-katex --locked
+
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Setup Pages
+        id: pages
         uses: actions/configure-pages@v5
 
-      - name: Install mdBook
+      - name: Build with mdBook
+        shell: bash
         run: |
-          curl -L https://github.com/rust-lang/mdBook/releases/latest/download/mdbook-v0.4.52-x86_64-unknown-linux-gnu.tar.gz -o mdbook.tar.gz
-          tar -xzf mdbook.tar.gz
-          sudo mv mdbook /usr/local/bin/mdbook
-          mdbook --version
+          set -euo pipefail
+          mdbook build docs
+          test -f docs/book/index.html
 
-      - name: Build book
-        run: mdbook build docs
-
-      - name: Upload Pages artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./docs/book
