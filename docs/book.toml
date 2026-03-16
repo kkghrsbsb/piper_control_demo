@@ -2,3 +2,9 @@
 title = "piper-control-demo"
 authors = ["kkghrsbsb"]
 language = "en"
+
+[output.html]
+site-url = "/piper_control_demo/"
+
+[output.html]
+git-repository-url = "https://github.com/kkghrsbsb/piper_control_demo"
