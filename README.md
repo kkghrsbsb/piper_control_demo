@@ -48,7 +48,7 @@ mdbook serve docs
 - 这个仓库连接真实机械臂，`scripts/` 下有多份会直接操作硬件的调试脚本。
 - `tests/` 下也有少量需要人工触发的专项硬件测试，例如 socket 关节流跟随和 PyBullet 实时映射测试。
 - `src/piper_socket_bridge/` 已作为后续 socket 关节流转发的新库目录；新实现应以当前新版 `scripts/move_debug.py` 的基础控制方式为标准，`tests/socket_old/` 仅保留作历史参考。
-- `src/piper_socket_bridge/` 当前已初步搭出统一 `q + gripper` 协议、PyBullet 发送端和真实机械臂接收端骨架；`tests/socket_old/` 仅保留作历史参考。
+- `src/piper_socket_bridge/` 当前已初步搭出统一 `q + gripper` 协议、PyBullet 发送端和真实机械臂接收端骨架；其中 PyBullet 发送端现在发送的是仿真真实状态流，而不是滑条目标值。`tests/socket_old/` 仅保留作历史参考。
 - `scripts/show_status.py` 当前会以约 200Hz 输出 `{"t": ..., "q": [...], "gripper": ...}` JSON 行流，可作为新的状态观察与协议参考格式。
 - 任何会让机械臂上电、使能、复位、驱动夹爪或发生实际运动的操作，都属于高风险动作。
 - AI 可以协助读代码、写代码、改文档、整理命令和分析流程，但不能代替人工去执行激活机械臂并进行运动控制的尝试。
@@ -56,5 +56,5 @@ mdbook serve docs
 - 项目当前已把 `move_debug.py` 中的软件层键盘急停抽为公共实现；后续涉及 `BuiltinJointPositionController` 的真实机械臂控制脚本，应默认优先复用这套能力。
 - 项目当前也已把“目标误差长期不下降就停止继续下发新目标位”的程序层运动异常守护抽为公共实现；它用于尽早发现疑似阻挡、卡住或响应异常，但不能替代底层碰撞保护或硬件急停。
 - 项目当前也已把“人工确认后回安全位并失能”的收尾流程抽为公共实现；后续存在类似收尾逻辑的真实机械臂控制脚本，应默认优先复用这套流程。
-- `src/piper_pybullet_sim/slider_arm_gripper.py` 当前把仿真夹爪整理成单一 `gripper_position` 滑条，并在内部镜像驱动两侧夹爪手指；这是仿真控制语义的优化，后续仍需把这层单一夹爪语义继续接入新的 socket 协议链路。
+- `src/piper_pybullet_sim/slider_arm_gripper.py` 当前把仿真夹爪整理成单一 `gripper_position` 滑条，并在内部镜像驱动两侧夹爪手指；对外滑条语义使用 `[0.0, 0.1]`，仿真内部控制使用 `[0.0, 0.175]`，两者通过线性比例 `1.75` 换算。
 - 涉及风险边界、项目结构和脚本用途的更完整说明，以 [`docs/src/README.md`](./docs/src/README.md) 为准。

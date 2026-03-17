@@ -22,7 +22,7 @@ HOST = "127.0.0.1"
 PORT = 15001
 STREAM_HZ = 200.0
 MAX_FORCE = 80.0
-MAX_VELOCITY = 0.5
+MAX_VELOCITY = 0.3
 
 
 def connect_receiver(host: str = HOST, port: int = PORT) -> socket.socket:
@@ -41,11 +41,12 @@ def connect_receiver(host: str = HOST, port: int = PORT) -> socket.socket:
             time.sleep(0.2)
 
 
-def apply_slider_controls(robot_id: int, joint_sliders: list[SliderControl]) -> tuple[list[float], float]:
-    """Apply the current UI slider targets to the simulated robot and collect a frame."""
+def apply_slider_targets(robot_id: int, joint_sliders: list[SliderControl]) -> None:
+    """Apply the current UI slider targets to the simulated robot.
 
-    q: list[float] = []
-    gripper = 0.0
+    This step only writes command targets into the PyBullet position controllers.
+    It does not mean the simulated joints have already reached those targets.
+    """
 
     for control in joint_sliders:
         slider_value = float(p.readUserDebugParameter(control.slider_id))
@@ -59,16 +60,52 @@ def apply_slider_controls(robot_id: int, joint_sliders: list[SliderControl]) -> 
                 maxVelocity=MAX_VELOCITY,
             )
 
-        if control.slider_name == GRIPPER_SLIDER_NAME:
-            gripper = slider_value
-        else:
-            q.append(slider_value)
 
-    return q[:6], gripper
+def read_control_state(robot_id: int, control: SliderControl) -> float:
+    """Recover the current simulated state represented by one slider control.
+
+    For ordinary arm joints, one slider maps to one joint, so we can directly
+    read that joint's current angle. For the gripper slider, one control maps to
+    two mirrored joints; we therefore project both joint states back into the
+    single-slider semantic and average them.
+    """
+
+    recovered_values: list[float] = []
+    for target in control.targets:
+        joint_position = float(p.getJointState(robot_id, target.joint_index)[0])
+        recovered_values.append(joint_position / target.scale)
+
+    return sum(recovered_values) / len(recovered_values)
+
+
+def read_robot_state_frame(
+        robot_id: int,
+        joint_sliders: list[SliderControl],
+        *,
+        timestamp: float,
+) -> PoseStreamFrame:
+    """Read the current simulated robot state and convert it into a stream frame."""
+
+    q: list[float] = []
+    gripper = 0.0
+
+    for control in joint_sliders:
+        current_value = read_control_state(robot_id, control)
+        if control.slider_name == GRIPPER_SLIDER_NAME:
+            gripper = current_value
+        else:
+            q.append(current_value)
+
+    return PoseStreamFrame(t=timestamp, q=q[:6], gripper=gripper)
 
 
 def run_pybullet_slider_sender(host: str = HOST, port: int = PORT) -> None:
-    """Start the PyBullet slider UI and stream joint/gripper targets over socket."""
+    """Start the PyBullet slider UI and stream the simulated robot's true state.
+
+    The sliders still act as command targets for the simulation, but the socket
+    payload is sent only after `stepSimulation()` and is built from the current
+    simulated joint/gripper state, not from the raw slider values.
+    """
 
     dt = 1.0 / STREAM_HZ
 
@@ -102,15 +139,16 @@ def run_pybullet_slider_sender(host: str = HOST, port: int = PORT) -> None:
 
     try:
         while p.isConnected():
-            q, gripper = apply_slider_controls(robot_id, joint_sliders)
-            payload = PoseStreamFrame(
-                t=time.perf_counter() - start_time,
-                q=q,
-                gripper=gripper,
+            apply_slider_targets(robot_id, joint_sliders)
+            p.stepSimulation()
+
+            payload = read_robot_state_frame(
+                robot_id,
+                joint_sliders,
+                timestamp=time.perf_counter() - start_time,
             )
             client.sendall(payload.to_json_line())
 
-            p.stepSimulation()
             frame_count += 1
             target_time = start_time + frame_count * dt
             remaining = target_time - time.perf_counter()

@@ -16,6 +16,10 @@ CONTROL_TYPES = {
 GRIPPER_JOINT_7 = "joint7"
 GRIPPER_JOINT_8 = "joint8"
 GRIPPER_SLIDER_NAME = "gripper_position"
+GRIPPER_PROTOCOL_MIN = 0.0
+GRIPPER_PROTOCOL_MAX = 0.1
+GRIPPER_SIM_MAX = 0.175
+GRIPPER_PROTOCOL_TO_SIM_SCALE = GRIPPER_SIM_MAX / GRIPPER_PROTOCOL_MAX
 
 
 @dataclass(frozen=True)
@@ -69,16 +73,30 @@ def get_gripper_control(robot_id: int, joint_infos: dict[int, tuple]) -> SliderC
     if joint7_info is None or joint8_info is None or joint7_index is None or joint8_index is None:
         return None
 
-    lower7, upper7 = get_joint_limits(joint7_info)
     start_value = p.getJointState(robot_id, joint7_index)[0]
-    slider_id = p.addUserDebugParameter(GRIPPER_SLIDER_NAME, lower7, upper7, start_value)
+    start_value = start_value / GRIPPER_PROTOCOL_TO_SIM_SCALE
+    start_value = min(max(start_value, GRIPPER_PROTOCOL_MIN), GRIPPER_PROTOCOL_MAX)
+    slider_id = p.addUserDebugParameter(
+        GRIPPER_SLIDER_NAME,
+        GRIPPER_PROTOCOL_MIN,
+        GRIPPER_PROTOCOL_MAX,
+        start_value,
+    )
 
     return SliderControl(
         slider_name=GRIPPER_SLIDER_NAME,
         slider_id=slider_id,
         targets=(
-            JointTarget(joint_index=joint7_index, joint_name=GRIPPER_JOINT_7, scale=1.0),
-            JointTarget(joint_index=joint8_index, joint_name=GRIPPER_JOINT_8, scale=-1.0),
+            JointTarget(
+                joint_index=joint7_index,
+                joint_name=GRIPPER_JOINT_7,
+                scale=GRIPPER_PROTOCOL_TO_SIM_SCALE,
+            ),
+            JointTarget(
+                joint_index=joint8_index,
+                joint_name=GRIPPER_JOINT_8,
+                scale=-GRIPPER_PROTOCOL_TO_SIM_SCALE,
+            ),
         ),
     )
 

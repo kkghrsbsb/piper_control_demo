@@ -64,14 +64,14 @@
 ### Socket 桥接代码
 
 - `src/piper_socket_bridge/`
-  用于承载新的 socket 关节流转发库代码。当前已初步搭出统一协议、仿真发送端适配和真实机械臂接收端跟随骨架，协议格式采用 `{"t": ..., "q": [j1, ..., j6], "gripper": ...}`；这里的真实机械臂控制基线，也明确以当前“新版” [`scripts/move_debug.py`](/home/xinger/MyWork/piper_control_demo/scripts/move_debug.py) 的初始化、安全动作、公共碰撞保护配置、公共软件层急停、程序层运动异常守护和公共收尾失能流程为标准，不再回退参考旧的 socket 测试主流程。
+  用于承载新的 socket 关节流转发库代码。当前已初步搭出统一协议、仿真发送端适配和真实机械臂接收端跟随骨架，协议格式采用 `{"t": ..., "q": [j1, ..., j6], "gripper": ...}`；其中当前 PyBullet 发送端已经切到“发送仿真真实状态流”而不是直接发送滑条目标值。这里的真实机械臂控制基线，也明确以当前“新版” [`scripts/move_debug.py`](/home/xinger/MyWork/piper_control_demo/scripts/move_debug.py) 的初始化、安全动作、公共碰撞保护配置、公共软件层急停、程序层运动异常守护和公共收尾失能流程为标准，不再回退参考旧的 socket 测试主流程。
 
 ### 仿真辅助代码
 
 - [`src/piper_pybullet_sim/joint_slider_control.py`](/home/xinger/MyWork/piper_control_demo/src/piper_pybullet_sim/joint_slider_control.py)
   是较早的 PyBullet 滑条控制版本，按关节逐个暴露滑条。
 - [`src/piper_pybullet_sim/slider_arm_gripper.py`](/home/xinger/MyWork/piper_control_demo/src/piper_pybullet_sim/slider_arm_gripper.py)
-  是针对夹爪控制进一步整理后的版本：不再直接分别暴露 `joint7` 和 `joint8`，而是改成单一的 `gripper_position` 滑条，并在程序内部按镜像关系同步驱动两侧夹爪手指；这是基于该夹爪在 URDF 中属于连杆同步机构所做的仿真控制优化，目的是让仿真端的夹爪控制方式更接近后续 socket 协议中的独立 `gripper` 字段语义。
+  是针对夹爪控制进一步整理后的版本：不再直接分别暴露 `joint7` 和 `joint8`，而是改成单一的 `gripper_position` 滑条，并在程序内部按镜像关系同步驱动两侧夹爪手指；这是基于该夹爪在 URDF 中属于连杆同步机构所做的仿真控制优化，目的是让仿真端的夹爪控制方式更接近后续 socket 协议中的独立 `gripper` 字段语义。当前这里采用的是线性映射：对外滑条语义使用与真实机械臂一致的 `[0.0, 0.1]`，仿真内部控制仍使用更自然的 `[0.0, 0.175]`，两者通过 `1.75` 倍关系换算。
 
 ### 资源目录
 
@@ -98,7 +98,7 @@
 - [`socket_joint_stream_test.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_stream_test.py)
   参考 `move_debug.py` 的初始化流程，在机械臂运动到零位后启动本机模拟 socket 发送，并按 200Hz 关节角流驱动机械臂从零位跟随到目标位姿。
 - [`pybullet_socket_stream_sender.py`](/home/xinger/MyWork/piper_control_demo/tests/pybullet_socket_stream_sender.py)
-  启动基于 `piper_socket_bridge` 的 PyBullet 滑条发送端，参考 `slider_arm_gripper.py` 的单一夹爪滑条语义，并以约 200Hz 持续发送 `{"t": ..., "q": [...], "gripper": ...}` JSON 行流。
+  启动基于 `piper_socket_bridge` 的 PyBullet 滑条发送端，参考 `slider_arm_gripper.py` 的单一夹爪滑条语义，并以约 200Hz 持续发送 `{"t": ..., "q": [...], "gripper": ...}` JSON 行流；注意当前发送的是仿真推进后的真实状态流，而不是滑条目标值本身。
 - [`socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
   启动基于 `piper_socket_bridge` 的真实机械臂接收端；在机械臂回零并确认发送端也处于零位后，按流实时下发 6 关节命令与独立夹爪命令，并支持按 `q` 键结束跟随后再进入失能确认。
 - `tests/socket_old/`
@@ -129,7 +129,7 @@
 还没有完成、但已经为后续做准备的部分：
 
 - [`tests/pybullet_socket_stream_sender.py`](/home/xinger/MyWork/piper_control_demo/tests/pybullet_socket_stream_sender.py)
-  现在已经按新的 `q + gripper` 协议骨架接入了单一夹爪语义。
+  现在已经按新的 `q + gripper` 协议骨架接入了单一夹爪语义，并且发送语义已切到“仿真真实状态”而不是“滑条目标命令”。
 - [`tests/socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
   现在也已按同一协议骨架接入了真实机械臂接收端，能在同一个控制周期里连续下发 6 关节和夹爪命令。
 - 换句话说，新的单向测试链路骨架已经搭好，但双向流、LeRobot 适配和更完整的库结构仍待继续完善。

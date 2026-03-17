@@ -11,6 +11,8 @@
   - [socket_7d_joint_and_gripper_control_review_2026-03-16](review/socket_7d_joint_and_gripper_control_review_2026-03-16.md)
 - [explain]()
   - [piper_socket_bridge_initial_setup_2026-03-16](explain/piper_socket_bridge_initial_setup_2026-03-16.md)
+  - [pybullet_true_state_stream_sender_2026-03-17](explain/pybullet_true_state_stream_sender_2026-03-17.md)
+  - [pybullet_gripper_linear_mapping_2026-03-17](explain/pybullet_gripper_linear_mapping_2026-03-17.md)
 - [plan]()
   - [socket_joint_stream_test](plan/socket_joint_stream_test.md)
   - [pybullet_socket_realtime_follow_test](plan/pybullet_socket_realtime_follow_test.md)
@@ -22,3 +24,4 @@
   - [software_motion_guard_for_collision_like_events](plan/software_motion_guard_for_collision_like_events.md)
   - [piper_socket_bridge_unified_7d_adapters](plan/piper_socket_bridge_unified_7d_adapters.md)
   - [slider_arm_gripper_based_sim_and_bidirectional_tests](plan/slider_arm_gripper_based_sim_and_bidirectional_tests.md)
+  - [pybullet_true_state_stream_sender](plan/pybullet_true_state_stream_sender.md)
