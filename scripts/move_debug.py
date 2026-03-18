@@ -13,12 +13,20 @@ from piper_control_demo.control import (
     confirm_and_shutdown,
     move_to_position_with_keyboard_stop,
 )
+'''
+    |joint_name|     limit(rad)       |    limit(angle)    |
+    |----------|     ----------       |     ----------     |
+    |joint1    |   [-2.6179, 2.6179]  |    [-150.0, 150.0] |
+    |joint2    |   [0, 3.14]          |    [0, 180.0]      |
+    |joint3    |   [-2.967, 0]        |    [-170, 0]       |
+    |joint4    |   [-1.745, 1.745]    |    [-100.0, 100.0] |
+    |joint5    |   [-1.22, 1.22]      |    [-70.0, 70.0]   |
+    |joint6    |   [-2.09439, 2.09439]|    [-120.0, 120.0] |
+'''
 
 # 目标位姿：`q` 只表示 6 个关节，夹爪位置单独定义
-# 控制范围见 https://github.com/Reimagine-Robotics/piper_control/blob/main/src/piper_control/piper_interface.py
 # 一些运动重要参数的范围见 .src/piper_control_demo/control.py
-
-# target_q = [j1, j2, j3, j4, j5, j6]
+# target_q = [j1, j2, j3, j4, j5, j6]  type: rad
 TARGET_Q = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 # target_gripper range: [0, 0.1]
 TARGET_GRIPPER = 0.0

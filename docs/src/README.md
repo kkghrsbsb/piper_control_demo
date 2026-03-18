@@ -134,6 +134,12 @@
   现在也已按同一协议骨架接入了真实机械臂接收端，能在同一个控制周期里连续下发 6 关节和夹爪命令。
 - 换句话说，新的单向测试链路骨架已经搭好，但双向流、LeRobot 适配和更完整的库结构仍待继续完善。
 
+关于后续 LeRobot 接入与 Piper 移植，目前仓库里也已经放入了一份参考材料：
+
+- [`docs/reference/huggingface-lerobot-8a5edab282632443.txt`](/home/xinger/MyWork/piper_control_demo/docs/reference/huggingface-lerobot-8a5edab282632443.txt)
+
+这份文件是从 Hugging Face `lerobot` 仓库导出的文本参考，后续如果继续做 `src/piper_socket_bridge/` 的 `lerobot` 适配、Piper 机械臂接入或控制语义迁移，应优先把它作为本地参考入口之一。
+
 ## 目前最值得先读的文件
 
 如果是第一次接手这个仓库，推荐按下面顺序阅读：

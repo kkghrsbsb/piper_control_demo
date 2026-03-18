@@ -26,7 +26,7 @@ ZERO_CHECK_FRAMES = 5
 PRINT_HZ = 20.0
 SOCKET_POLL_TIMEOUT = 0.01
 JOINT_SAFE_SPEED = 10
-GRIPPER_EFFORT_NOW = 1.0
+GRIPPER_EFFORT_NOW = 0.4
 
 
 def frame_near_zero(frame: PoseStreamFrame) -> bool:

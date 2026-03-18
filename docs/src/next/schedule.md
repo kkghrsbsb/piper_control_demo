@@ -51,3 +51,17 @@ codex resume 019ceaaa-5fbb-7da2-b2dd-ce3ecf983f3d
 针对第 2 条
 src/piper_socket_bridge/sim_adapter 中有个很关键的设计点：它不是“读仿真当前关节角再发送”，而是读滑条目标值再发送。也就是说，发送出去的是命令目标，不是机器人动力学仿真后的真实反馈状态。这是个很重要的语义区别。因为 setJointMotorControl2(... POSITION_CONTROL, targetPosition=...) 只是告诉 PyBullet “往这里走”，但这一时刻实际关节角可能还没完全到位。如果接收端拿这个流当“目标命令流”是对的；如果误以为这是“真实状态流”，那语义就错了。
 已修复，改为“真实状态流”，见 docs/src/explain/pybullet_true_state_stream_sender_2026-03-17.md
+
+# 03.18
+分析目标
+1. 第4条，看物理机械臂作为接受端是怎么稳定接受关节流做控制的
+2. 做物理机械臂按键的示教模式下（就是用它的重力补偿），物理机械臂作为主臂，仿真环境中映射，urdf作为从臂，实现这个单向，能成功在仿真环境中做一个夹取任务
+3. 主要是调研lerobot训练生态，今日并非要研究。看 b站-同济子豪兄 目录 。分配人去研究它的训练模式和推理流在集群中（表述不好，觉得尽早决定，jyc是最佳人选）
+4. 调研lerobot下开源机械臂so100/101主从臂，主要关注主臂，对后续piper从臂适配控制并做数据采集至关重要。费用和卖家的选择
+
+第2个涉及设计架构和代码分析，需要一周以上的时间
+
+今日重点吸收信息流
+codex 整理文档
+`docs/src/plan/lerobot_fork_piper_integration_layout.md` LeRobot Fork 中的 Piper 移植与接入目录结构方案
+`docs/src/review/piper_socket_bridge_bidirectional_architecture_review_2026-03-18.md` piper_socket_bridge 双向扩展架构审查 2026-03-18

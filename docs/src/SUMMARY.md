@@ -9,6 +9,7 @@
   - [collision_protection_review_2026-03-16](review/collision_protection_review_2026-03-16.md)
   - [collision_protection_function_review_2026-03-16](review/collision_protection_function_review_2026-03-16.md)
   - [socket_7d_joint_and_gripper_control_review_2026-03-16](review/socket_7d_joint_and_gripper_control_review_2026-03-16.md)
+  - [piper_socket_bridge_bidirectional_architecture_review_2026-03-18](review/piper_socket_bridge_bidirectional_architecture_review_2026-03-18.md)
 - [explain]()
   - [piper_socket_bridge_initial_setup_2026-03-16](explain/piper_socket_bridge_initial_setup_2026-03-16.md)
   - [pybullet_true_state_stream_sender_2026-03-17](explain/pybullet_true_state_stream_sender_2026-03-17.md)
@@ -25,3 +26,4 @@
   - [piper_socket_bridge_unified_7d_adapters](plan/piper_socket_bridge_unified_7d_adapters.md)
   - [slider_arm_gripper_based_sim_and_bidirectional_tests](plan/slider_arm_gripper_based_sim_and_bidirectional_tests.md)
   - [pybullet_true_state_stream_sender](plan/pybullet_true_state_stream_sender.md)
+  - [lerobot_fork_piper_integration_layout](plan/lerobot_fork_piper_integration_layout.md)
