@@ -33,6 +33,10 @@ uv run python scripts/disable_safe.py
 # 轨迹录制 / 回放实验
 uv run python scripts/record_trajectories.py --robots can0
 
+# 手柄遥操（终端 1：初始化；终端 2：手柄控制）
+uv run python tests/connect_init.py
+uv run python tests/gamepad_joint_control.py
+
 # 启动 PyBullet 滑条发送端
 uv run python tests/pybullet_socket_stream_sender.py
 
@@ -46,7 +50,8 @@ mdbook serve docs
 ## 重要说明
 
 - 这个仓库连接真实机械臂，`scripts/` 下有多份会直接操作硬件的调试脚本。
-- `tests/` 下也有少量需要人工触发的专项硬件测试，例如 socket 关节流跟随和 PyBullet 实时映射测试。
+- `tests/` 下也有少量需要人工触发的专项硬件测试，例如 socket 关节流跟随、PyBullet 实时映射测试和手柄遥操关节控制。
+- `tests/gamepad_joint_control.py` 提供基于 pygame 手柄的关节级实时遥操，纯 `piper_control` 实现；需要先在另一个终端运行 `tests/connect_init.py` 完成初始化。
 - `src/piper_socket_bridge/` 已作为后续 socket 关节流转发的新库目录；新实现应以当前新版 `scripts/move_debug.py` 的基础控制方式为标准，`tests/socket_old/` 仅保留作历史参考。
 - `src/piper_socket_bridge/` 当前已初步搭出统一 `q + gripper` 协议、PyBullet 发送端和真实机械臂接收端骨架；其中 PyBullet 发送端现在发送的是仿真真实状态流，而不是滑条目标值。`tests/socket_old/` 仅保留作历史参考。
 - `scripts/show_status.py` 当前会以约 200Hz 输出 `{"t": ..., "q": [...], "gripper": ...}` JSON 行流，可作为新的状态观察与协议参考格式。

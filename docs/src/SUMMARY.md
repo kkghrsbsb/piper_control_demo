@@ -27,3 +27,4 @@
   - [slider_arm_gripper_based_sim_and_bidirectional_tests](plan/slider_arm_gripper_based_sim_and_bidirectional_tests.md)
   - [pybullet_true_state_stream_sender](plan/pybullet_true_state_stream_sender.md)
   - [lerobot_fork_piper_integration_layout](plan/lerobot_fork_piper_integration_layout.md)
+  - [gamepad-joint-control](plan/gamepad-joint-control.md)

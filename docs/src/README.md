@@ -101,6 +101,10 @@
   启动基于 `piper_socket_bridge` 的 PyBullet 滑条发送端，参考 `slider_arm_gripper.py` 的单一夹爪滑条语义，并以约 200Hz 持续发送 `{"t": ..., "q": [...], "gripper": ...}` JSON 行流；注意当前发送的是仿真推进后的真实状态流，而不是滑条目标值本身。
 - [`socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
   启动基于 `piper_socket_bridge` 的真实机械臂接收端；在机械臂回零并确认发送端也处于零位后，按流实时下发 6 关节命令与独立夹爪命令，并支持按 `q` 键结束跟随后再进入失能确认。
+- [`connect_init.py`](/home/xinger/MyWork/piper_control_demo/tests/connect_init.py)
+  纯 `piper_control` 版本的连接初始化脚本：发现 CAN → 使能臂和夹爪 → 回零位 → 等待用户按 Enter → 安全关闭。作为 `gamepad_joint_control.py` 的前置依赖，需要在另一个终端保持运行。
+- [`gamepad_joint_control.py`](/home/xinger/MyWork/piper_control_demo/tests/gamepad_joint_control.py)
+  基于 pygame 手柄的关节级遥操脚本，纯 `piper_control` 实现（不依赖 `src/` 库代码）。通过独立 CAN 连接检测使能和零位后进入控制循环，支持 6 关节增量控制和夹爪开合，Y 键回零、A 键退出、LB/RB 调速。必须在 `connect_init.py` 已完成初始化后运行。
 - `tests/socket_old/`
   用于存放历史 socket 测试文件。这部分内容现在主要作为回溯或对照参考，尤其是其中旧版 `main()` 控制实现不再作为后续 socket 新功能的实现标准。
 
@@ -132,13 +136,16 @@
   现在已经按新的 `q + gripper` 协议骨架接入了单一夹爪语义，并且发送语义已切到“仿真真实状态”而不是“滑条目标命令”。
 - [`tests/socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
   现在也已按同一协议骨架接入了真实机械臂接收端，能在同一个控制周期里连续下发 6 关节和夹爪命令。
-- 换句话说，新的单向测试链路骨架已经搭好，但双向流、LeRobot 适配和更完整的库结构仍待继续完善。
+- 换句话说，新的单向测试链路骨架已经搭好，但双向流和更完整的库结构仍待继续完善。
 
-关于后续 LeRobot 接入与 Piper 移植，目前仓库里也已经放入了一份参考材料：
+### 参考资料
 
-- [`docs/reference/huggingface-lerobot-8a5edab282632443.txt`](/home/xinger/MyWork/piper_control_demo/docs/reference/huggingface-lerobot-8a5edab282632443.txt)
+`docs/reference/` 目录下存放了从外部仓库导出的文本参考：
 
-这份文件是从 Hugging Face `lerobot` 仓库导出的文本参考，后续如果继续做 `src/piper_socket_bridge/` 的 `lerobot` 适配、Piper 机械臂接入或控制语义迁移，应优先把它作为本地参考入口之一。
+- [`huggingface-lerobot-8a5edab282632443.txt`](/home/xinger/MyWork/piper_control_demo/docs/reference/huggingface-lerobot-8a5edab282632443.txt)
+  Hugging Face `lerobot` 仓库的文本导出，LeRobot 接入工作已在其他仓库完成，本仓库不再继续这部分工作，仅保留作参考。
+- [`kehuanjack-gamepad_piper-8a5edab282632443.txt`](/home/xinger/MyWork/piper_control_demo/docs/reference/kehuanjack-gamepad_piper-8a5edab282632443.txt)
+  kehuanjack 的 `Gamepad_PiPER` 仓库文本导出，提供了基于 `piper_sdk` 和 pygame 的手柄关节/位姿双模式遥操参考实现。本仓库的 `tests/gamepad_joint_control.py` 参考了其手柄映射和关节增量控制思路，但使用 `piper_control` 重写。
 
 ## 目前最值得先读的文件
 
@@ -150,9 +157,11 @@
 4. [`scripts/move_debug.py`](/home/xinger/MyWork/piper_control_demo/scripts/move_debug.py)
 5. [`scripts/README.md`](/home/xinger/MyWork/piper_control_demo/scripts/README.md)
 6. [`scripts/record_trajectories.py`](/home/xinger/MyWork/piper_control_demo/scripts/record_trajectories.py)
-7. [`tests/socket_joint_stream_test.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_stream_test.py)
-8. [`tests/pybullet_socket_stream_sender.py`](/home/xinger/MyWork/piper_control_demo/tests/pybullet_socket_stream_sender.py)
-9. [`tests/socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
+7. [`tests/connect_init.py`](/home/xinger/MyWork/piper_control_demo/tests/connect_init.py)
+8. [`tests/gamepad_joint_control.py`](/home/xinger/MyWork/piper_control_demo/tests/gamepad_joint_control.py)
+9. [`tests/socket_joint_stream_test.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_stream_test.py)
+10. [`tests/pybullet_socket_stream_sender.py`](/home/xinger/MyWork/piper_control_demo/tests/pybullet_socket_stream_sender.py)
+11. [`tests/socket_joint_realtime_follow.py`](/home/xinger/MyWork/piper_control_demo/tests/socket_joint_realtime_follow.py)
 
 这条路径基本对应了“项目定位 -> 连接流程 -> 基础控制 -> 实验方向”的理解顺序。
 
@@ -271,6 +280,10 @@ uv run python scripts/disable_safe.py
 
 # 轨迹录制 / 回放实验
 uv run python scripts/record_trajectories.py --robots can0
+
+# 手柄遥操（终端 1：初始化；终端 2：手柄控制）
+uv run python tests/connect_init.py
+uv run python tests/gamepad_joint_control.py
 
 # 启动 PyBullet 滑条发送端
 uv run python tests/pybullet_socket_stream_sender.py
