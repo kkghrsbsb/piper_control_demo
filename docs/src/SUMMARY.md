@@ -14,6 +14,7 @@
   - [piper_socket_bridge_initial_setup_2026-03-16](explain/piper_socket_bridge_initial_setup_2026-03-16.md)
   - [pybullet_true_state_stream_sender_2026-03-17](explain/pybullet_true_state_stream_sender_2026-03-17.md)
   - [pybullet_gripper_linear_mapping_2026-03-17](explain/pybullet_gripper_linear_mapping_2026-03-17.md)
+  - [real-to-sim-sync-bridge-refactor-2026-03-31](explain/real-to-sim-sync-bridge-refactor-2026-03-31.md)
 - [plan]()
   - [socket_joint_stream_test](plan/socket_joint_stream_test.md)
   - [pybullet_socket_realtime_follow_test](plan/pybullet_socket_realtime_follow_test.md)
@@ -28,3 +29,4 @@
   - [pybullet_true_state_stream_sender](plan/pybullet_true_state_stream_sender.md)
   - [lerobot_fork_piper_integration_layout](plan/lerobot_fork_piper_integration_layout.md)
   - [gamepad-joint-control](plan/gamepad-joint-control.md)
+  - [real-to-sim-sync-and-bridge-refactor](plan/real-to-sim-sync-and-bridge-refactor.md)
